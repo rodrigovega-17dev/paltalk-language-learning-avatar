@@ -36,8 +36,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
 
   useEffect(() => {
     loadProfile();
-    // Ensure ElevenLabs is set as provider (already default)
-    conversationService.setTTSProvider('elevenlabs');
+    // ElevenLabs is now the only TTS provider
     
     // Load current TTS settings
     const currentSettings = conversationFlowController.getTTSSettings();

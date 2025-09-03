@@ -1,6 +1,6 @@
 import { Audio } from 'expo-av';
-import * as Speech from 'expo-speech';
-import { ConversationContext, Message, ConversationSession, TTSProvider, TTSSettings } from '../types/conversation';
+
+import { ConversationContext, Message, ConversationSession, ElevenLabsTTSSettings } from '../types/conversation';
 import { conversationStorageService, ConversationStorageService } from './conversationStorageService';
 import { elevenLabsService } from './elevenLabsService';
 
@@ -8,12 +8,9 @@ export interface ConversationService {
   startListening(): Promise<void>;
   stopListening(): Promise<string>;
   sendMessageToChatGPT(message: string, context: ConversationContext): Promise<string>;
-  speakText(text: string, language: string, ttsSettings: TTSSettings): Promise<void>;
+  speakText(text: string, language: string, ttsSettings: ElevenLabsTTSSettings): Promise<void>;
   pauseConversation(): void;
   resumeConversation(): void;
-  // TTS Provider methods
-  setTTSProvider(provider: TTSProvider): void;
-  getTTSProvider(): TTSProvider;
   // New persistence methods
   startNewConversation(userId: string, language: string, cefrLevel: string): Promise<ConversationSession>;
   saveMessage(conversationId: string, message: Message): Promise<void>;
@@ -35,7 +32,6 @@ export class ExpoConversationService implements ConversationService {
   private speechToTextEndpoint: string;
   private storageService: ConversationStorageService;
   private currentConversation: ConversationSession | null = null;
-  private ttsProvider: TTSProvider = 'elevenlabs'; // Default to elevenlabs
 
   constructor(chatGPTApiKey: string, speechToTextEndpoint: string = '', storageService?: ConversationStorageService) {
     this.chatGPTApiKey = chatGPTApiKey;
@@ -288,153 +284,48 @@ export class ExpoConversationService implements ConversationService {
     Keep responses conversational and engaging. Gently correct mistakes when appropriate. Ask follow-up questions to encourage continued conversation. Limit responses to 2-3 sentences to maintain natural conversation flow.`;
   }
 
-  async speakText(text: string, language: string, ttsSettings: TTSSettings): Promise<void> {
+  async speakText(text: string, language: string, ttsSettings: ElevenLabsTTSSettings): Promise<void> {
     if (this.isPaused) {
       return;
     }
 
     try {
-      const { provider, useSpeaker, voiceId, speed, emotion, stability, similarityBoost } = ttsSettings;
+      const { useSpeaker, voiceId, speed, emotion, stability, similarityBoost } = ttsSettings;
       
-      if (provider === 'elevenlabs') {
-        try {
-          const selectedVoiceId = voiceId || await elevenLabsService.getDefaultVoiceForLanguage(language);
-          
-          const audioSpeed = speed || 1.0;
-          const audioEmotion = emotion || 'neutral';
-          const audioStability = stability || 0.6;
-          const audioSimilarityBoost = similarityBoost || 0.5;
-          
-          await elevenLabsService.speakText(
-            text, 
-            selectedVoiceId, 
-            language, 
-            useSpeaker, 
-            audioSpeed,
-            audioEmotion,
-            audioStability,
-            audioSimilarityBoost
-          );
-        } catch (elevenLabsError) {
-          await this.speakWithExpoSpeech(text, language, useSpeaker);
-        }
-      } else {
-        await this.speakWithExpoSpeech(text, language, useSpeaker);
-      }
+      const selectedVoiceId = voiceId || await elevenLabsService.getDefaultVoiceForLanguage(language);
+      
+      const audioSpeed = speed || 1.0;
+      const audioEmotion = emotion || 'neutral';
+      const audioStability = stability || 0.6;
+      const audioSimilarityBoost = similarityBoost || 0.5;
+      
+      await elevenLabsService.speakText(
+        text, 
+        selectedVoiceId, 
+        language, 
+        useSpeaker, 
+        audioSpeed,
+        audioEmotion,
+        audioStability,
+        audioSimilarityBoost
+      );
     } catch (error) {
       const conversationError: ConversationError = {
         type: 'audio',
-        message: `Text-to-speech failed: ${error}`,
+        message: `ElevenLabs TTS failed: ${error}`,
         recoverable: true
       };
       throw conversationError;
     }
   }
 
-  private async forceIOSLoudspeaker(): Promise<void> {
-    try {
-      // iOS audio routing fix: By default, iOS routes audio through the earpiece (phone speaker)
-      // when recording is enabled. We need to explicitly force loudspeaker mode like YouTube does.
-      // This requires temporarily disabling recording, setting playback mode, then re-enabling.
-      
-      // First attempt: Standard loudspeaker configuration
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-        staysActiveInBackground: false,
-      });
-      
-      // Second attempt: Force loudspeaker by temporarily disabling recording
-      // This mimics how media apps like YouTube force loudspeaker output
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false, // Disable recording for pure playback mode
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-        staysActiveInBackground: false,
-      });
-      
-      console.log('ConversationService: Forced iOS loudspeaker mode for TTS');
-    } catch (error) {
-      console.log('ConversationService: Failed to force iOS loudspeaker:', error);
-    }
-  }
 
-  private async speakWithExpoSpeech(text: string, language: string, useSpeaker: boolean = true): Promise<void> {
-    try {
-      // Configure audio session for speaker output
-      await this.initializeAudio(useSpeaker);
-      
-      // Additional iOS loudspeaker enforcement
-      if (useSpeaker) {
-        await this.forceIOSLoudspeaker();
-      }
-      
-      const languageCode = this.getLanguageCode(language);
-      console.log(`ConversationService: Starting expo-speech synthesis - "${text}" in ${languageCode}, speaker: ${useSpeaker}`);
 
-      return new Promise<void>((resolve, reject) => {
-        Speech.speak(text, {
-          language: languageCode,
-          pitch: 1.0,
-          rate: 0.8,
-          volume: 1.0, // Set volume to maximum (0.0 to 1.0)
-          voice: undefined, // Use default voice for the language
-          onDone: () => {
-            console.log('ConversationService: Expo-speech synthesis completed');
-            // Re-enable recording after TTS if we're using loudspeaker (non-blocking)
-            if (useSpeaker) {
-              Audio.setAudioModeAsync({
-                allowsRecordingIOS: true,
-                playsInSilentModeIOS: true,
-                shouldDuckAndroid: true,
-                playThroughEarpieceAndroid: false,
-                staysActiveInBackground: false,
-              }).then(() => {
-                console.log('ConversationService: Re-enabled recording after TTS');
-              }).catch((error) => {
-                console.log('ConversationService: Failed to re-enable recording:', error);
-              });
-            }
-            resolve();
-          },
-          onError: (error) => {
-            console.log('ConversationService: Expo-speech synthesis error:', error);
-            reject(error);
-          },
-        });
-      });
-    } catch (error) {
-      console.log('ConversationService: Expo-speech synthesis failed:', error);
-      throw error;
-    }
-  }
 
-  // TTS Provider methods
-  setTTSProvider(provider: TTSProvider): void {
-    this.ttsProvider = provider;
-    console.log(`TTS Provider changed to: ${provider}`);
-  }
-
-  getTTSProvider(): TTSProvider {
-    return this.ttsProvider;
-  }
-
-  private getLanguageCode(language: string): string {
-    const languageCodes: { [key: string]: string } = {
-      english: 'en-US',
-      spanish: 'es-ES',
-      french: 'fr-FR',
-      german: 'de-DE'
-    };
-    return languageCodes[language] || 'en-US';
-  }
 
   pauseConversation(): void {
     this.isPaused = true;
-    Speech.stop();
+    // Note: ElevenLabs audio stopping is handled by the service itself
 
     if (this.isRecording && this.recording) {
       this.recording.stopAndUnloadAsync().catch(() => {

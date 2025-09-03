@@ -1,7 +1,7 @@
 import { conversationService, ConversationService, ConversationError } from './conversationService';
 import { authService } from './authService';
 import { profileService } from './profileService';
-import { Message, ConversationContext, TTSSettings } from '../types/conversation';
+import { Message, ConversationContext, ElevenLabsTTSSettings } from '../types/conversation';
 
 export interface ConversationFlowController {
   startConversation(): Promise<void>;
@@ -16,8 +16,8 @@ export interface ConversationFlowController {
   setSpeakerEnabled(enabled: boolean): void;
   getSpeakerEnabled(): boolean;
   updateLanguageSettings(targetLanguage: string, cefrLevel: string): void;
-  setTTSSettings(settings: TTSSettings): void;
-  getTTSSettings(): TTSSettings;
+  setTTSSettings(settings: ElevenLabsTTSSettings): void;
+  getTTSSettings(): ElevenLabsTTSSettings;
   onSpeechStart?: () => void;
   onSpeechEnd?: () => void;
   onMessageAdded?: (message: Message) => void;
@@ -37,9 +37,13 @@ export class DefaultConversationFlowController implements ConversationFlowContro
   private conversationService: ConversationService;
   private errorHandler: (error: ConversationError) => void;
   private useSpeaker: boolean = true;
-  private ttsSettings: TTSSettings = {
-    provider: 'elevenlabs',
-    useSpeaker: true
+  private ttsSettings: ElevenLabsTTSSettings = {
+    voiceId: '',
+    useSpeaker: true,
+    speed: 1.0,
+    emotion: 'neutral',
+    stability: 0.6,
+    similarityBoost: 0.5
   };
   public onSpeechStart?: () => void;
   public onSpeechEnd?: () => void;
@@ -60,8 +64,7 @@ export class DefaultConversationFlowController implements ConversationFlowContro
       currentSessionId: this.generateSessionId(),
     };
     
-    // Initialize TTS settings from conversation service
-    this.ttsSettings.provider = this.conversationService.getTTSProvider();
+    // TTS settings are initialized with ElevenLabs defaults
   }
 
   private generateSessionId(): string {
@@ -350,12 +353,12 @@ export class DefaultConversationFlowController implements ConversationFlowContro
     return this.useSpeaker;
   }
 
-  setTTSSettings(settings: TTSSettings): void {
+  setTTSSettings(settings: ElevenLabsTTSSettings): void {
     this.ttsSettings = settings;
     this.useSpeaker = settings.useSpeaker;
   }
 
-  getTTSSettings(): TTSSettings {
+  getTTSSettings(): ElevenLabsTTSSettings {
     return this.ttsSettings;
   }
 

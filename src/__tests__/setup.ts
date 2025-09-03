@@ -1,6 +1,7 @@
 // Mock environment variables
 process.env.EXPO_PUBLIC_OPENAI_API_KEY = 'test-openai-api-key';
 process.env.EXPO_PUBLIC_SPEECH_TO_TEXT_ENDPOINT = 'http://test-stt-endpoint';
+process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY = 'test-elevenlabs-api-key';
 
 // Mock Supabase
 jest.mock('@supabase/supabase-js', () => ({
