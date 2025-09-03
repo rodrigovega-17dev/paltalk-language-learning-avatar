@@ -61,6 +61,7 @@ export const AudioTagSelector: React.FC<AudioTagSelectorProps> = ({
         audioTag.emotion,
         audioTag.stability,
         audioTag.similarityBoost
+        // No callbacks needed for test playback
       );
     } catch (error) {
               Alert.alert('Prueba Fallida', 'No se pudo reproducir el audio de prueba. Por favor verifica tu clave API de ElevenLabs.');

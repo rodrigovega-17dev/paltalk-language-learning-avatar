@@ -8,7 +8,7 @@ export interface ConversationService {
   startListening(): Promise<void>;
   stopListening(): Promise<string>;
   sendMessageToChatGPT(message: string, context: ConversationContext): Promise<string>;
-  speakText(text: string, language: string, ttsSettings: ElevenLabsTTSSettings): Promise<void>;
+  speakText(text: string, language: string, ttsSettings: ElevenLabsTTSSettings, onSpeechStart?: () => void, onSpeechEnd?: () => void): Promise<void>;
   pauseConversation(): void;
   resumeConversation(): void;
   // New persistence methods
@@ -284,7 +284,7 @@ export class ExpoConversationService implements ConversationService {
     Keep responses conversational and engaging. Gently correct mistakes when appropriate. Ask follow-up questions to encourage continued conversation. Limit responses to 2-3 sentences to maintain natural conversation flow.`;
   }
 
-  async speakText(text: string, language: string, ttsSettings: ElevenLabsTTSSettings): Promise<void> {
+  async speakText(text: string, language: string, ttsSettings: ElevenLabsTTSSettings, onSpeechStart?: () => void, onSpeechEnd?: () => void): Promise<void> {
     if (this.isPaused) {
       return;
     }
@@ -307,7 +307,9 @@ export class ExpoConversationService implements ConversationService {
         audioSpeed,
         audioEmotion,
         audioStability,
-        audioSimilarityBoost
+        audioSimilarityBoost,
+        onSpeechStart,
+        onSpeechEnd
       );
     } catch (error) {
       const conversationError: ConversationError = {

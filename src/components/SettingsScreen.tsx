@@ -13,6 +13,7 @@ import { LanguageSelector } from './LanguageSelector';
 import { CEFRLevelSelector, CEFRLevel } from './CEFRLevelSelector';
 import { VoiceSelector } from './VoiceSelector';
 import { AudioTagSelector } from './AudioTagSelector';
+import { SpeedPresetSelector } from './SpeedPresetSelector';
 import { profileService } from '../services/profileService';
 import { authService } from '../services/authService';
 import { conversationFlowController } from '../services/conversationFlowController';
@@ -31,8 +32,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>('');
   const [selectedAudioTag, setSelectedAudioTag] = useState<AudioTag | undefined>(undefined);
+  const [speechSpeed, setSpeechSpeed] = useState<number>(1.0);
 
   useEffect(() => {
     loadProfile();
@@ -40,6 +43,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
     
     // Load current TTS settings
     const currentSettings = conversationFlowController.getTTSSettings();
+    setSpeechSpeed(currentSettings.speed || 1.0);
     
     // Load current audio tag if available
     if (currentSettings.emotion && currentSettings.speed) {
@@ -70,17 +74,65 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
     setLoading(false);
   };
 
-  const handleLanguageChange = (language: string) => {
+  const handleLanguageChange = async (language: string) => {
     if (profile) {
-      setProfile({ ...profile, targetLanguage: language });
+      const updatedProfile = { ...profile, targetLanguage: language };
+      setProfile(updatedProfile);
       setHasChanges(true);
+      
+      // Auto-save language changes immediately
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        try {
+          setAutoSaving(true);
+          const result = await profileService.updateProfile(currentUser.id, {
+            targetLanguage: language,
+          });
+          
+          if (result.success) {
+            // Update auth service in-memory profile
+            await authService.updateUserProfile({ targetLanguage: language });
+            setHasChanges(false);
+            console.log('Language updated successfully to:', language);
+          }
+        } catch (error) {
+          console.error('Failed to auto-save language change:', error);
+          // Keep hasChanges true so user can manually save later
+        } finally {
+          setAutoSaving(false);
+        }
+      }
     }
   };
 
-  const handleLevelChange = (level: CEFRLevel) => {
+  const handleLevelChange = async (level: CEFRLevel) => {
     if (profile) {
-      setProfile({ ...profile, cefrLevel: level });
+      const updatedProfile = { ...profile, cefrLevel: level };
+      setProfile(updatedProfile);
       setHasChanges(true);
+      
+      // Auto-save level changes immediately
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        try {
+          setAutoSaving(true);
+          const result = await profileService.updateProfile(currentUser.id, {
+            cefrLevel: level,
+          });
+          
+          if (result.success) {
+            // Update auth service in-memory profile
+            await authService.updateUserProfile({ cefrLevel: level });
+            setHasChanges(false);
+            console.log('CEFR level updated successfully to:', level);
+          }
+        } catch (error) {
+          console.error('Failed to auto-save level change:', error);
+          // Keep hasChanges true so user can manually save later
+        } finally {
+          setAutoSaving(false);
+        }
+      }
     }
   };
 
@@ -101,6 +153,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
 
   const handleAudioTagSelect = (audioTag: AudioTag) => {
     setSelectedAudioTag(audioTag);
+    setSpeechSpeed(audioTag.speed);
     
     // Update conversation flow controller TTS settings
     const currentSettings = conversationFlowController.getTTSSettings();
@@ -116,6 +169,45 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
     };
     
     conversationFlowController.setTTSSettings(newSettings);
+  };
+
+  const handleSpeedChange = (speed: number) => {
+    setSpeechSpeed(speed);
+    
+    // Update conversation flow controller TTS settings
+    const currentSettings = conversationFlowController.getTTSSettings();
+    const newSettings = {
+      ...currentSettings,
+      speed: speed,
+    };
+    
+    conversationFlowController.setTTSSettings(newSettings);
+  };
+
+  const handleTestSpeed = async (speed: number) => {
+    if (!selectedVoiceId || !profile?.targetLanguage) {
+      Alert.alert('Configuración Incompleta', 'Por favor selecciona una voz primero.');
+      return;
+    }
+
+    const testText = profile.targetLanguage === 'english' ? 'Testing speech speed.' :
+                    profile.targetLanguage === 'spanish' ? 'Probando velocidad del habla.' :
+                    profile.targetLanguage === 'french' ? 'Test de vitesse de parole.' :
+                    'Teste der Sprechgeschwindigkeit.';
+
+    const currentSettings = conversationFlowController.getTTSSettings();
+    
+    await elevenLabsService.speakText(
+      testText,
+      selectedVoiceId,
+      profile.targetLanguage,
+      true, // Use loudspeaker
+      speed,
+      currentSettings.emotion || 'neutral',
+      currentSettings.stability || 0.6,
+      currentSettings.similarityBoost || 0.5
+      // No callbacks needed for test playback
+    );
   };
 
   const saveProfile = async () => {
@@ -198,14 +290,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Configuración</Text>
-          {(onClose || onNavigateBack) && (
-            <TouchableOpacity 
-              style={styles.closeButton} 
-              onPress={onNavigateBack || onClose}
-            >
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.headerRight}>
+            {autoSaving && (
+              <View style={styles.autoSavingIndicator}>
+                <ActivityIndicator size="small" color="#007AFF" />
+                <Text style={styles.autoSavingText}>Guardando...</Text>
+              </View>
+            )}
+            {(onClose || onNavigateBack) && (
+              <TouchableOpacity 
+                style={styles.closeButton} 
+                onPress={onNavigateBack || onClose}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -235,6 +335,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
               language={profile?.targetLanguage || 'english'}
               selectedVoiceId={selectedVoiceId}
               onVoiceSelect={handleVoiceSelect}
+              disabled={saving}
+            />
+
+            <SpeedPresetSelector
+              selectedSpeed={speechSpeed}
+              onSpeedSelect={handleSpeedChange}
+              onTestSpeed={handleTestSpeed}
               disabled={saving}
             />
           </View>
@@ -352,6 +459,25 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#333',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  autoSavingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 12,
+  },
+  autoSavingText: {
+    fontSize: 12,
+    color: '#007AFF',
+    marginLeft: 4,
+    fontWeight: '500',
   },
   closeButton: {
     width: 32,

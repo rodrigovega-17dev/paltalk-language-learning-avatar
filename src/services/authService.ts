@@ -246,6 +246,12 @@ class SupabaseAuthService implements AuthService {
     };
 
     console.log('Auth service: User profile updated in memory:', profileUpdates);
+    
+    // Trigger auth state callback to update UI immediately
+    if (this.authStateCallback) {
+      console.log('Auth service: Triggering auth state callback after profile update');
+      this.authStateCallback(this.currentUser);
+    }
   }
 }
 

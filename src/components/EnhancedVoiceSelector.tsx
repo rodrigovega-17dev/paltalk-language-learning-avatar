@@ -3,6 +3,104 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndi
 import { elevenLabsService, ElevenLabsVoice } from '../services/elevenLabsService';
 import { AudioEmotion } from '../types/conversation';
 
+// Translation mapping for common voice descriptions
+const voiceDescriptionTranslations: { [key: string]: string } = {
+  // Exact matches for common ElevenLabs descriptions
+  'Warm and engaging voice, perfect for storytelling.': 'Voz cálida y atractiva, perfecta para contar historias.',
+  'Clear and professional voice, ideal for business content.': 'Voz clara y profesional, ideal para contenido empresarial.',
+  'Friendly and approachable voice with a warm tone.': 'Voz amigable y accesible con un tono cálido.',
+  'Confident and authoritative voice for presentations.': 'Voz confiada y autoritaria para presentaciones.',
+  'Soft and gentle voice, great for meditation content.': 'Voz suave y gentil, excelente para contenido de meditación.',
+  'Energetic and enthusiastic voice for marketing.': 'Voz enérgica y entusiasta para marketing.',
+  'Calm and soothing voice for relaxation content.': 'Voz calmada y relajante para contenido de relajación.',
+  'Young and vibrant voice with natural delivery.': 'Voz joven y vibrante con entrega natural.',
+  'Mature and experienced voice for educational content.': 'Voz madura y experimentada para contenido educativo.',
+  'Articulate and clear voice for audiobooks.': 'Voz articulada y clara para audiolibros.',
+  
+  // Common patterns and words for partial matching
+  'warm': 'cálida',
+  'engaging': 'atractiva',
+  'storytelling': 'narración',
+  'clear': 'clara',
+  'professional': 'profesional',
+  'business': 'empresarial',
+  'friendly': 'amigable',
+  'approachable': 'accesible',
+  'confident': 'confiada',
+  'authoritative': 'autoritaria',
+  'presentations': 'presentaciones',
+  'soft': 'suave',
+  'gentle': 'gentil',
+  'meditation': 'meditación',
+  'energetic': 'enérgica',
+  'enthusiastic': 'entusiasta',
+  'marketing': 'marketing',
+  'calm': 'calmada',
+  'soothing': 'relajante',
+  'relaxation': 'relajación',
+  'young': 'joven',
+  'vibrant': 'vibrante',
+  'natural': 'natural',
+  'delivery': 'entrega',
+  'mature': 'madura',
+  'experienced': 'experimentada',
+  'educational': 'educativo',
+  'articulate': 'articulada',
+  'audiobooks': 'audiolibros',
+  'voice': 'voz',
+  'perfect': 'perfecta',
+  'ideal': 'ideal',
+  'great': 'excelente',
+  'content': 'contenido',
+  'tone': 'tono',
+  'with': 'con',
+  'for': 'para',
+  'and': 'y'
+};
+
+// Function to translate voice descriptions
+const translateVoiceDescription = (description: string): string => {
+  if (!description) return '';
+  
+  console.log('Original description:', description);
+  
+  // First check for exact matches
+  if (voiceDescriptionTranslations[description]) {
+    console.log('Found exact translation:', voiceDescriptionTranslations[description]);
+    return voiceDescriptionTranslations[description];
+  }
+  
+  // If no exact match, try to translate common words/phrases
+  let translatedDescription = description;
+  let changesMade = 0;
+  
+  // Replace common patterns (prioritize longer phrases first)
+  const sortedTranslations = Object.entries(voiceDescriptionTranslations)
+    .sort(([a], [b]) => b.length - a.length);
+  
+  sortedTranslations.forEach(([english, spanish]) => {
+    if (english.length > 20) return; // Skip very long sentences
+    
+    const regex = new RegExp(`\\b${english.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    const newDescription = translatedDescription.replace(regex, spanish);
+    if (newDescription !== translatedDescription) {
+      changesMade++;
+      translatedDescription = newDescription;
+    }
+  });
+  
+  console.log('Translated description:', translatedDescription);
+  console.log('Changes made:', changesMade);
+  
+  // If very few changes were made and description is still mostly English, 
+  // provide a generic Spanish description
+  if (changesMade < 2 && description.length > 20) {
+    return 'Voz de alta calidad para conversación natural';
+  }
+  
+  return translatedDescription;
+};
+
 interface EnhancedVoiceSelectorProps {
   language: string;
   selectedVoiceId?: string;
@@ -33,14 +131,21 @@ export const EnhancedVoiceSelector: React.FC<EnhancedVoiceSelectorProps> = ({
       setError(null);
       
       const availableVoices = await elevenLabsService.getVoicesForLanguage(language);
+      
+      // Debug: Log actual voice descriptions
+      console.log('Voice descriptions for debugging:');
+      availableVoices.forEach(voice => {
+        console.log(`${voice.name}: "${voice.description}"`);
+      });
+      
       setVoices(availableVoices);
       
       if (availableVoices.length === 0) {
-        setError(`No voices available for ${language}. Please check your ElevenLabs subscription.`);
+        setError(`No hay voces disponibles para ${language}. Por favor verifica tu suscripción de ElevenLabs.`);
       }
     } catch (err) {
       console.error('Failed to load voices:', err);
-      setError('Failed to load voices. Please check your internet connection and ElevenLabs API key.');
+      setError('Error al cargar las voces. Por favor verifica tu conexión a internet y tu clave API de ElevenLabs.');
     } finally {
       setLoading(false);
     }
@@ -48,7 +153,7 @@ export const EnhancedVoiceSelector: React.FC<EnhancedVoiceSelectorProps> = ({
 
   const handlePreview = async (voiceId: string, voiceName: string) => {
     if (previewingVoice) {
-      Alert.alert('Preview in Progress', 'Please wait for the current preview to finish.');
+      Alert.alert('Vista Previa en Progreso', 'Por favor espera a que termine la vista previa actual.');
       return;
     }
 
@@ -64,8 +169,8 @@ export const EnhancedVoiceSelector: React.FC<EnhancedVoiceSelectorProps> = ({
     } catch (err) {
       console.error('Voice preview failed:', err);
       Alert.alert(
-        'Preview Failed', 
-        `Could not preview ${voiceName}. Please check your internet connection.`,
+        'Error en Vista Previa', 
+        `No se pudo reproducir la vista previa de ${voiceName}. Por favor verifica tu conexión a internet.`,
         [{ text: 'OK' }]
       );
     } finally {
@@ -88,11 +193,11 @@ export const EnhancedVoiceSelector: React.FC<EnhancedVoiceSelectorProps> = ({
             {item.name}
           </Text>
           <Text style={styles.voiceDetails}>
-            {item.language} • {item.gender || 'Unknown'}
+            {item.language} • {item.gender || 'Desconocido'}
           </Text>
           {item.description && (
             <Text style={styles.voiceDescription} numberOfLines={2}>
-              {item.description}
+              {translateVoiceDescription(item.description)}
             </Text>
           )}
         </TouchableOpacity>
@@ -106,7 +211,7 @@ export const EnhancedVoiceSelector: React.FC<EnhancedVoiceSelectorProps> = ({
             {isPreviewing ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.previewButtonText}>Preview</Text>
+              <Text style={styles.previewButtonText}>Vista Previa</Text>
             )}
           </TouchableOpacity>
         )}
@@ -118,7 +223,7 @@ export const EnhancedVoiceSelector: React.FC<EnhancedVoiceSelectorProps> = ({
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading voices...</Text>
+        <Text style={styles.loadingText}>Cargando voces...</Text>
       </View>
     );
   }
@@ -128,7 +233,7 @@ export const EnhancedVoiceSelector: React.FC<EnhancedVoiceSelectorProps> = ({
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={loadVoices}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={styles.retryButtonText}>Reintentar</Text>
         </TouchableOpacity>
       </View>
     );
@@ -136,9 +241,9 @@ export const EnhancedVoiceSelector: React.FC<EnhancedVoiceSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Select Voice for {language}</Text>
+      <Text style={styles.title}>Seleccionar Voz para {language}</Text>
       <Text style={styles.subtitle}>
-        {voices.length} voice{voices.length !== 1 ? 's' : ''} available
+        {voices.length} voz{voices.length !== 1 ? 'es' : ''} disponible{voices.length !== 1 ? 's' : ''}
       </Text>
       
       <FlatList

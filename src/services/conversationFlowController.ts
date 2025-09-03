@@ -135,15 +135,13 @@ export class DefaultConversationFlowController implements ConversationFlowContro
     this.onMessageAdded?.(avatarMessage);
 
     // Speak the greeting - this will resolve when speech is complete
-
-    this.onSpeechStart?.();
     await this.conversationService.speakText(
       greetingResponse,
       this.state.context.targetLanguage,
-      this.ttsSettings
+      this.ttsSettings,
+      this.onSpeechStart, // Pass callback to trigger when audio actually starts
+      this.onSpeechEnd    // Pass callback to trigger when audio ends
     );
-    
-    this.onSpeechEnd?.();
   }
 
   private getGreetingMessage(language: string): string {
@@ -243,15 +241,13 @@ export class DefaultConversationFlowController implements ConversationFlowContro
       this.onMessageAdded?.(aiMessage);
 
       // Speak the AI response - this will resolve when speech is complete
-  
-      this.onSpeechStart?.();
       await this.conversationService.speakText(
         aiResponse,
         this.state.context.targetLanguage,
-        this.ttsSettings
+        this.ttsSettings,
+        this.onSpeechStart, // Pass callback to trigger when audio actually starts
+        this.onSpeechEnd    // Pass callback to trigger when audio ends
       );
-
-      this.onSpeechEnd?.();
 
       // Save conversation to database (implement this based on your needs)
       await this.saveConversationToDatabase();

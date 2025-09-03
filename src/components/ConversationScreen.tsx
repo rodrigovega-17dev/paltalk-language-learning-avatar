@@ -31,7 +31,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-
+  const scrollViewRef = useRef<ScrollView>(null);
   const avatarRef = useRef<AvatarAnimationControllerImpl | null>(null);
   const avatarController = useAvatarController(avatarRef as React.RefObject<AvatarAnimationControllerImpl>);
   
@@ -39,9 +39,20 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   useEffect(() => {
     console.log('ConversationScreen: Avatar ref changed, controller exists:', !!avatarRef.current);
   }, [avatarRef.current]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messages.length > 0 && showTextDisplay) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages, showTextDisplay]);
   const recordButtonScale = useRef(new Animated.Value(1)).current;
   const recordButtonOpacity = useRef(new Animated.Value(1)).current;
   const pulseAnimation = useRef(new Animated.Value(1)).current;
+  const floatingTextOpacity = useRef(new Animated.Value(0)).current;
+  const floatingTextTranslateY = useRef(new Animated.Value(20)).current;
 
   // Handle conversation errors
   const handleConversationError = (error: ConversationError) => {
@@ -155,6 +166,11 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     const history = conversationFlowController.getConversationHistory();
     console.log('ConversationScreen: Updating messages, count:', history.length);
     setMessages(history);
+    
+    // Auto-scroll to bottom when new messages are added
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
   // Handle record button press (start recording)
@@ -196,6 +212,20 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
         ])
       ).start();
 
+      // Animate floating text in
+      Animated.parallel([
+        Animated.timing(floatingTextOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingTextTranslateY, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       await conversationFlowController.handleUserInput();
     } catch (error) {
       setIsRecording(false);
@@ -215,6 +245,20 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
         }),
       ]).start();
 
+      // Hide floating text
+      Animated.parallel([
+        Animated.timing(floatingTextOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingTextTranslateY, {
+          toValue: 20,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       if (error && typeof error === 'object' && 'type' in error) {
         handleConversationError(error as ConversationError);
       }
@@ -227,37 +271,48 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   const handleRecordEnd = async () => {
     if (!isRecording) return;
 
-    try {
-      setIsLoading(true);
-      avatarController.playThinkingAnimation();
-      
-      // Reset button animation
-      pulseAnimation.stopAnimation();
-      Animated.parallel([
-        Animated.timing(recordButtonScale, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(recordButtonOpacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnimation, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    // Immediately update UI state when button is released
+    setIsRecording(false);
+    setIsLoading(true);
+    
+    // Reset button animation immediately
+    pulseAnimation.stopAnimation();
+    Animated.parallel([
+      Animated.timing(recordButtonScale, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(recordButtonOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnimation, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      // Hide floating text immediately
+      Animated.timing(floatingTextOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(floatingTextTranslateY, {
+        toValue: 20,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
+    try {
+      avatarController.playThinkingAnimation();
       await conversationFlowController.stopContinuousRecording();
-      setIsRecording(false);
       
       // Messages are now updated automatically via onMessageAdded callback
       
     } catch (error) {
-      setIsRecording(false);
       avatarController.playIdleAnimation();
       
       if (error && typeof error === 'object' && 'type' in error) {
@@ -336,6 +391,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
             </TouchableOpacity>
           </View>
           <ScrollView 
+            ref={scrollViewRef}
             style={styles.messageContainer}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.messageContent}
@@ -387,48 +443,70 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
           <>
             {/* Record Button */}
             {!isPaused && (
-              <Animated.View
-                style={[
-                  styles.recordButtonContainer,
-                  {
-                    transform: [{ scale: recordButtonScale }],
-                    opacity: recordButtonOpacity,
-                  }
-                ]}
-              >
-                <TouchableOpacity
+              <View style={styles.recordSection}>
+                {/* Floating Text Above Button - Only show when recording */}
+                {isRecording && (
+                  <Animated.View
+                    style={[
+                      styles.floatingTextContainer,
+                      {
+                        opacity: floatingTextOpacity,
+                        transform: [{ translateY: floatingTextTranslateY }],
+                      }
+                    ]}
+                  >
+                    <View style={styles.floatingTextBubble}>
+                      <Text style={styles.floatingText}>
+                        Suelta para enviar
+                      </Text>
+                      <View style={styles.floatingTextArrow} />
+                    </View>
+                  </Animated.View>
+                )}
+
+                <Animated.View
                   style={[
-                    styles.recordButton,
-                    isRecording && styles.recordButtonActive,
-                    isLoading && styles.recordButtonDisabled
+                    styles.recordButtonContainer,
+                    {
+                      transform: [{ scale: recordButtonScale }],
+                      opacity: recordButtonOpacity,
+                    }
                   ]}
-                  onPressIn={handleRecordStart}
-                  onPressOut={handleRecordEnd}
-                  disabled={isLoading}
-                  activeOpacity={0.9}
                 >
-                  <View style={styles.recordButtonInner}>
-                    <Text style={styles.recordButtonIcon}>
-                      {isRecording ? '🔴' : '🎤'}
-                    </Text>
-                    <Text style={styles.recordButtonText}>
-                      {isRecording ? 'Suelta para enviar' : 'Mantén presionado para hablar'}
-                    </Text>
-                  </View>
-                  
-                  {/* Pulse animation for recording */}
-                  {isRecording && (
-                    <Animated.View 
-                      style={[
-                        styles.recordPulse,
-                        {
-                          transform: [{ scale: pulseAnimation }],
-                        }
-                      ]} 
-                    />
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
+                  <TouchableOpacity
+                    style={[
+                      styles.recordButton,
+                      isRecording && styles.recordButtonActive,
+                      isLoading && styles.recordButtonDisabled
+                    ]}
+                    onPressIn={handleRecordStart}
+                    onPressOut={handleRecordEnd}
+                    disabled={isLoading}
+                    activeOpacity={0.9}
+                  >
+                    <View style={styles.recordButtonInner}>
+                      <Text style={styles.recordButtonIcon}>
+                        {isRecording ? '🔴' : '🎤'}
+                      </Text>
+                      <Text style={styles.recordButtonText}>
+                        {isRecording ? '' : 'Mantén presionado para hablar'}
+                      </Text>
+                    </View>
+                    
+                    {/* Pulse animation for recording */}
+                    {isRecording && (
+                      <Animated.View 
+                        style={[
+                          styles.recordPulse,
+                          {
+                            transform: [{ scale: pulseAnimation }],
+                          }
+                        ]} 
+                      />
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
             )}
 
             {/* Control Buttons */}
@@ -691,9 +769,48 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  recordButtonContainer: {
+  recordSection: {
     alignItems: 'center',
     marginBottom: 20,
+  },
+  floatingTextContainer: {
+    position: 'absolute',
+    top: -80,
+    zIndex: 10,
+    alignItems: 'center',
+  },
+  floatingTextBubble: {
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  floatingText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  floatingTextArrow: {
+    position: 'absolute',
+    bottom: -8,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  recordButtonContainer: {
+    alignItems: 'center',
   },
   recordButton: {
     width: 120,

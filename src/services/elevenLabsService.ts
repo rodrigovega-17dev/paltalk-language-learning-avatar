@@ -223,10 +223,12 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
     speed: number = 1.0,
     emotion: AudioEmotion = 'neutral',
     stability: number = 0.6,
-    similarityBoost: number = 0.5
+    similarityBoost: number = 0.5,
+    onSpeechStart?: () => void,
+    onSpeechEnd?: () => void
   ): Promise<void> {
-    // Clamp speed to ElevenLabs supported range (0.7 to 1.2)
-    const clampedSpeed = Math.max(0.7, Math.min(1.2, speed));
+    // Clamp speed to reasonable text modification range (0.5 to 1.5)
+    const clampedSpeed = Math.max(0.5, Math.min(1.5, speed));
     if (speed !== clampedSpeed) {
       console.log(`ElevenLabs: Speed ${speed} clamped to supported range: ${clampedSpeed}`);
     }
@@ -242,7 +244,7 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
       // Validate that the voice is appropriate for the language
       await this.validateVoiceForLanguage(voiceId, language);
 
-      // Create cache key for this specific audio request
+      // Create cache key for this specific audio request (including speed since it affects text generation)
       const cacheKey = this.createCacheKey(text, voiceId, clampedSpeed, emotion, clampedStability, clampedSimilarityBoost);
       
       // Check if we have cached audio for this request
@@ -251,7 +253,21 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
       if (!tempUri || !(await FileSystem.getInfoAsync(tempUri)).exists) {
         // Generate new audio if not cached or file doesn't exist
         const modelId = this.getModelForLanguage(language);
-        const enhancedText = this.addEmotionalContext(text, emotion);
+        let enhancedText = this.addEmotionalContext(text, emotion);
+        
+        // Apply speed control by modifying text pacing
+        enhancedText = this.applySpeedToText(enhancedText, clampedSpeed);
+
+        const requestBody = {
+          text: enhancedText,
+          model_id: modelId,
+          voice_settings: {
+            stability: clampedStability,
+            similarity_boost: clampedSimilarityBoost,
+          },
+        };
+
+        console.log(`ElevenLabs: Making TTS request (speed will be applied during playback: ${clampedSpeed}):`, JSON.stringify(requestBody, null, 2));
 
         const response = await fetch(`${this.baseUrl}/text-to-speech/${voiceId}`, {
           method: 'POST',
@@ -259,16 +275,7 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
             'xi-api-key': this.apiKey,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            text: enhancedText,
-            model_id: modelId,
-            voice_settings: {
-              stability: clampedStability,
-              similarity_boost: clampedSimilarityBoost,
-            },
-            // Add speed control - ElevenLabs supports speed parameter (0.7 to 1.2 range)
-            ...(clampedSpeed !== 1.0 && { speed: clampedSpeed }),
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
@@ -297,10 +304,12 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
         { 
           shouldPlay: true, 
           volume: useSpeaker ? 1.0 : 0.8, // Full volume for loudspeaker
-          rate: 1.0,
-          shouldCorrectPitch: true,
+          rate: 1.0, // Keep normal playback rate to maintain natural pitch
+          shouldCorrectPitch: false,
         }
       );
+
+      console.log(`ElevenLabs: Playing audio with natural speech pacing (speed: ${clampedSpeed})`);
 
       // Additional loudspeaker enforcement right before playback
       if (useSpeaker) {
@@ -342,9 +351,15 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
               }
             }
             
+            onSpeechEnd?.();
+            console.log('ElevenLabs: Audio playback finished, triggered onSpeechEnd');
             resolve();
           }
         });
+
+        // Trigger animation right before starting playback for better sync
+        onSpeechStart?.();
+        console.log('ElevenLabs: Triggered onSpeechStart right before playAsync');
 
         sound.playAsync().catch((error) => {
           console.error('ElevenLabs: Speech playback error:', error);
@@ -359,8 +374,8 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
 
   // Enhanced testLoudspeaker method with emotion support
   async testLoudspeaker(voiceId: string, language: string, speed: number = 1.0, emotion: AudioEmotion = 'neutral'): Promise<void> {
-    // Clamp speed to ElevenLabs supported range (0.7 to 1.2)
-    const clampedSpeed = Math.max(0.7, Math.min(1.2, speed));
+    // Clamp speed to reasonable text modification range (0.5 to 1.5)
+    const clampedSpeed = Math.max(0.5, Math.min(1.5, speed));
     if (speed !== clampedSpeed) {
       console.log(`ElevenLabs: Test speed ${speed} clamped to supported range: ${clampedSpeed}`);
     }
@@ -615,6 +630,47 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
   }
 
   // Helper method to add emotional context to text
+  private applySpeedToText(text: string, speed: number): string {
+    if (speed >= 0.9 && speed <= 1.1) {
+      // Normal speed range, no modification needed
+      return text;
+    }
+    
+    if (speed < 0.9) {
+      // Slower speech: add pauses and emphasis
+      // Add commas for natural pauses and periods for longer pauses
+      let slowText = text;
+      
+      // Add pauses after punctuation for very slow speech
+      if (speed < 0.7) {
+        slowText = slowText.replace(/\./g, '... ');
+        slowText = slowText.replace(/,/g, ', ');
+        slowText = slowText.replace(/\?/g, '? ');
+        slowText = slowText.replace(/!/g, '! ');
+      } else {
+        // Moderate slow speech
+        slowText = slowText.replace(/\./g, '. ');
+        slowText = slowText.replace(/,/g, ', ');
+      }
+      
+      // Add spaces between words for very slow speech
+      if (speed < 0.6) {
+        slowText = slowText.replace(/\s+/g, '  ');
+      }
+      
+      return slowText;
+    } else {
+      // Faster speech: remove some pauses and make more fluid
+      let fastText = text;
+      
+      // Remove extra spaces and some punctuation pauses
+      fastText = fastText.replace(/\s+/g, ' ');
+      fastText = fastText.replace(/,\s+/g, ', ');
+      
+      return fastText;
+    }
+  }
+
   private addEmotionalContext(text: string, emotion: AudioEmotion): string {
     // ElevenLabs handles emotion through voice settings, not text markers
     // Return the original text without any emotional markers
@@ -635,6 +691,7 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
       'neutral', // Neutral emotion for preview
       0.6, // Default stability
       0.5 // Default similarity boost
+      // No callbacks needed for preview
     );
   }
 
