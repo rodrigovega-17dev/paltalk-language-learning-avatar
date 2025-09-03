@@ -83,6 +83,9 @@ export const CEFRLevelSelector: React.FC<CEFRLevelSelectorProps> = ({
                 selectedLevel === levelInfo.level && styles.selectedText,
                 disabled && styles.disabledText,
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.8}
             >
               {levelInfo.name}
             </Text>
@@ -137,6 +140,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333',
     marginBottom: 4,
+    lineHeight: 26,
+    includeFontPadding: false,
   },
   selectedLevelCode: {
     color: '#007AFF',
@@ -146,6 +151,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#666',
     marginBottom: 8,
+    lineHeight: 20,
+    includeFontPadding: false,
   },
   selectedText: {
     color: '#007AFF',
@@ -154,6 +161,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
     lineHeight: 16,
+    includeFontPadding: false,
   },
   disabledText: {
     color: '#999',

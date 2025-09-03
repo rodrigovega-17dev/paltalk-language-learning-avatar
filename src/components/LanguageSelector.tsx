@@ -47,6 +47,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                 selectedLanguage === language.code && styles.selectedText,
                 disabled && styles.disabledText,
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.8}
             >
               {language.name}
             </Text>
@@ -74,13 +77,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginRight: 12,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#E5E5E5',
     backgroundColor: '#F8F9FA',
-    minWidth: 80,
+    minWidth: 100,
+    maxWidth: 120,
   },
   selectedOption: {
     borderColor: '#007AFF',
@@ -98,6 +102,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#666',
     textAlign: 'center',
+    lineHeight: 18,
+    includeFontPadding: false,
+    numberOfLines: 1,
+    flexShrink: 1,
   },
   selectedText: {
     color: '#007AFF',

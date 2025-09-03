@@ -383,7 +383,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
                 {saving ? (
                   <ActivityIndicator size="small" color="#FFF" />
                 ) : (
-                  <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+                  <Text 
+                    style={styles.saveButtonText}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true}
+                    minimumFontScale={0.8}
+                  >
+                    Guardar Cambios
+                  </Text>
                 )}
               </TouchableOpacity>
             )}
@@ -393,7 +400,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
               onPress={handleSignOut}
               disabled={saving}
             >
-              <Text style={styles.signOutButtonText}>Cerrar Sesión</Text>
+              <Text 
+                style={styles.signOutButtonText}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.8}
+              >
+                Cerrar Sesión
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -459,6 +473,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#333',
+    lineHeight: 32,
+    includeFontPadding: false,
   },
   headerRight: {
     flexDirection: 'row',
@@ -503,6 +519,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 8,
+    lineHeight: 24,
+    includeFontPadding: false,
   },
   sectionDescription: {
     fontSize: 14,
@@ -545,6 +563,8 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+    lineHeight: 20,
+    includeFontPadding: false,
   },
   signOutButton: {
     backgroundColor: '#FF3B30',

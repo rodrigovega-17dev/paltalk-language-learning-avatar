@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ProtectedRoute } from './src/components/ProtectedRoute';
 import { ConversationScreen } from './src/components/ConversationScreen';
 import { SettingsScreen } from './src/components/SettingsScreen';
@@ -30,9 +31,11 @@ function MainApp() {
 
 export default function App() {
   return (
-    <ProtectedRoute>
-      <MainApp />
-    </ProtectedRoute>
+    <SafeAreaProvider>
+      <ProtectedRoute>
+        <MainApp />
+      </ProtectedRoute>
+    </SafeAreaProvider>
   );
 }
 

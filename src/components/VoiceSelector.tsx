@@ -181,10 +181,20 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
                 <Text style={styles.voiceIcon}>
                   {voice.gender === 'female' ? '👩' : voice.gender === 'male' ? '👨' : '🎤'}
                 </Text>
-                <Text style={[styles.voiceName, isSelected && styles.voiceNameSelected]}>
+                <Text 
+                  style={[styles.voiceName, isSelected && styles.voiceNameSelected]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit={true}
+                  minimumFontScale={0.8}
+                >
                   {voice.name}
                 </Text>
-                <Text style={[styles.voiceDescription, isSelected && styles.voiceDescriptionSelected]}>
+                <Text 
+                  style={[styles.voiceDescription, isSelected && styles.voiceDescriptionSelected]}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit={true}
+                  minimumFontScale={0.8}
+                >
                   {voice.description || 'AI voice'}
                 </Text>
                 
@@ -290,6 +300,8 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'center',
     marginBottom: 4,
+    lineHeight: 20,
+    includeFontPadding: false,
   },
   voiceNameSelected: {
     color: '#1E40AF',
@@ -300,6 +312,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 12,
     textTransform: 'capitalize',
+    lineHeight: 18,
+    includeFontPadding: false,
   },
   voiceLanguageSelected: {
     color: '#374151',
@@ -310,6 +324,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 12,
     lineHeight: 16,
+    includeFontPadding: false,
   },
   voiceDescriptionSelected: {
     color: '#374151',

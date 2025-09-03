@@ -102,9 +102,14 @@ export class DefaultConversationFlowController implements ConversationFlowContro
       // Start with a greeting from the avatar
       await this.sendAvatarGreeting();
     } catch (error) {
+      console.log('ConversationFlowController startConversation error:', error);
+      console.log('Error type:', typeof error);
+      console.log('Error instanceof Error:', error instanceof Error);
+      
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       const conversationError: ConversationError = {
         type: 'api',
-        message: `Failed to start conversation: ${error}`,
+        message: `Failed to start conversation: ${errorMessage}`,
         recoverable: true
       };
       this.errorHandler(conversationError);

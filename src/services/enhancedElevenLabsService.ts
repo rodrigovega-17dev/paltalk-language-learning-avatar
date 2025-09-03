@@ -896,6 +896,7 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
   }
 }
 
+import { config } from '../config/environment';
+
 // Export singleton instance
-const apiKey = (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_ELEVENLABS_API_KEY) || 'test-elevenlabs-api-key';
-export const enhancedElevenLabsService = new EnhancedElevenLabsServiceImpl(apiKey);
+export const enhancedElevenLabsService = new EnhancedElevenLabsServiceImpl(config.elevenLabsApiKey);

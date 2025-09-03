@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   Text,
   ScrollView,
-  SafeAreaView,
   Alert,
   Animated,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AvatarContainer, useAvatarController } from './AvatarContainer';
 import { AvatarAnimationControllerImpl } from '../services/avatarAnimationController';
 import { conversationFlowController } from '../services/conversationFlowController';
@@ -34,7 +34,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   const scrollViewRef = useRef<ScrollView>(null);
   const avatarRef = useRef<AvatarAnimationControllerImpl | null>(null);
   const avatarController = useAvatarController(avatarRef as React.RefObject<AvatarAnimationControllerImpl>);
-  
+
   // Debug avatar ref
   useEffect(() => {
     console.log('ConversationScreen: Avatar ref changed, controller exists:', !!avatarRef.current);
@@ -57,10 +57,10 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   // Handle conversation errors
   const handleConversationError = (error: ConversationError) => {
     console.error('Conversation error:', error);
-    
+
     let alertTitle = 'Error de Conversación';
     let alertMessage = error.message;
-    
+
     switch (error.type) {
       case 'permission':
         alertTitle = 'Permiso de Micrófono Requerido';
@@ -88,12 +88,12 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   // Set up speech callbacks for avatar animation and message updates
   useEffect(() => {
     console.log('ConversationScreen: Setting up speech callbacks, avatarController exists:', !!avatarController);
-    
+
     conversationFlowController.onSpeechStart = () => {
       console.log('ConversationScreen: onSpeechStart called, playing talking animation');
       avatarController.playTalkingAnimation();
     };
-    
+
     conversationFlowController.onSpeechEnd = () => {
       console.log('ConversationScreen: onSpeechEnd called, playing idle animation');
       avatarController.playIdleAnimation();
@@ -126,11 +126,11 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
       if (error && typeof error === 'object' && 'type' in error) {
         handleConversationError(error as ConversationError);
       } else {
-              handleConversationError({
-        type: 'api',
-        message: 'Error al iniciar la conversación',
-        recoverable: true
-      });
+        handleConversationError({
+          type: 'api',
+          message: 'Error al iniciar la conversación',
+          recoverable: true
+        });
       }
     } finally {
       setIsLoading(false);
@@ -166,7 +166,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     const history = conversationFlowController.getConversationHistory();
     console.log('ConversationScreen: Updating messages, count:', history.length);
     setMessages(history);
-    
+
     // Auto-scroll to bottom when new messages are added
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -181,7 +181,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
       setIsLoading(true);
       setIsRecording(true);
       avatarController.playListeningAnimation();
-      
+
       // Animate record button
       Animated.parallel([
         Animated.timing(recordButtonScale, {
@@ -230,7 +230,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     } catch (error) {
       setIsRecording(false);
       avatarController.playIdleAnimation();
-      
+
       // Reset button animation
       Animated.parallel([
         Animated.timing(recordButtonScale, {
@@ -274,7 +274,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     // Immediately update UI state when button is released
     setIsRecording(false);
     setIsLoading(true);
-    
+
     // Reset button animation immediately
     pulseAnimation.stopAnimation();
     Animated.parallel([
@@ -309,12 +309,12 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     try {
       avatarController.playThinkingAnimation();
       await conversationFlowController.stopContinuousRecording();
-      
+
       // Messages are now updated automatically via onMessageAdded callback
-      
+
     } catch (error) {
       avatarController.playIdleAnimation();
-      
+
       if (error && typeof error === 'object' && 'type' in error) {
         handleConversationError(error as ConversationError);
       }
@@ -333,7 +333,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
+
       {/* Background Gradient */}
       <View style={styles.backgroundGradient}>
         <View style={styles.gradientTop} />
@@ -346,11 +346,16 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
           <View style={styles.headerContent}>
             <View style={styles.statusIndicator}>
               <View style={[styles.statusDot, isConversationActive && !isPaused && styles.statusActive]} />
-              <Text style={styles.statusText}>
+              <Text
+                style={styles.statusText}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.7}
+              >
                 {!isConversationActive ? 'Listo para chatear' : isPaused ? 'Pausado' : 'Activo'}
               </Text>
             </View>
-            
+
             {onNavigateToSettings && (
               <TouchableOpacity style={styles.settingsIcon} onPress={onNavigateToSettings}>
                 <Text style={styles.settingsIconText}>⚙️</Text>
@@ -369,7 +374,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
           }}
           style={styles.avatar}
         />
-        
+
         {/* Floating Action Buttons */}
         <View style={styles.floatingActions}>
           <TouchableOpacity
@@ -385,12 +390,12 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
       {showTextDisplay && (
         <Animated.View style={styles.messageOverlay}>
           <View style={styles.messageHeader}>
-                            <Text style={styles.messageHeaderText}>Conversación</Text>
+            <Text style={styles.messageHeaderText}>Conversación</Text>
             <TouchableOpacity onPress={handleToggleTextDisplay}>
               <Text style={styles.closeButton}>✕</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView 
+          <ScrollView
             ref={scrollViewRef}
             style={styles.messageContainer}
             showsVerticalScrollIndicator={false}
@@ -412,9 +417,9 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                 <View style={styles.messageBubble}>
                   <Text style={styles.messageText}>{message.content}</Text>
                   <Text style={styles.messageTime}>
-                    {message.timestamp.toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
                     })}
                   </Text>
                 </View>
@@ -434,8 +439,13 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
           >
             <View style={styles.primaryButtonContent}>
               <Text style={styles.primaryButtonIcon}>🚀</Text>
-              <Text style={styles.primaryButtonText}>
-                                  {isLoading ? 'Iniciando...' : 'Comenzar a Aprender'}
+              <Text
+                style={styles.primaryButtonText}
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.8}
+              >
+                {isLoading ? 'Iniciando...' : 'Comenzar a Aprender'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -488,20 +498,26 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                       <Text style={styles.recordButtonIcon}>
                         {isRecording ? '🔴' : '🎤'}
                       </Text>
-                      <Text style={styles.recordButtonText}>
+                      <Text
+                        style={styles.recordButtonText}
+                        numberOfLines={2}
+                        adjustsFontSizeToFit={true}
+                        minimumFontScale={0.7}
+                        textAlign="center"
+                      >
                         {isRecording ? '' : 'Mantén presionado para hablar'}
                       </Text>
                     </View>
-                    
+
                     {/* Pulse animation for recording */}
                     {isRecording && (
-                      <Animated.View 
+                      <Animated.View
                         style={[
                           styles.recordPulse,
                           {
                             transform: [{ scale: pulseAnimation }],
                           }
-                        ]} 
+                        ]}
                       />
                     )}
                   </TouchableOpacity>
@@ -518,7 +534,14 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                   disabled={isLoading}
                 >
                   <Text style={styles.secondaryButtonIcon}>⏸️</Text>
-                  <Text style={styles.secondaryButtonText}>Pausar</Text>
+                  <Text
+                    style={styles.secondaryButtonText}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true}
+                    minimumFontScale={0.8}
+                  >
+                    Pausar
+                  </Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
@@ -527,17 +550,31 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                   disabled={isLoading}
                 >
                   <Text style={styles.secondaryButtonIcon}>▶️</Text>
-                  <Text style={styles.secondaryButtonText}>Reanudar</Text>
+                  <Text
+                    style={styles.secondaryButtonText}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit={true}
+                    minimumFontScale={0.8}
+                  >
+                    Reanudar
+                  </Text>
                 </TouchableOpacity>
               )}
-              
+
               <TouchableOpacity
                 style={[styles.secondaryButton, styles.endButton]}
                 onPress={handleEndConversation}
                 disabled={isLoading}
               >
                 <Text style={styles.secondaryButtonIcon}>⏹️</Text>
-                                  <Text style={styles.secondaryButtonText}>Terminar</Text>
+                <Text
+                  style={styles.secondaryButtonText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit={true}
+                  minimumFontScale={0.8}
+                >
+                  Terminar
+                </Text>
               </TouchableOpacity>
             </View>
           </>
@@ -588,6 +625,8 @@ const styles = StyleSheet.create({
   statusIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 16,
   },
   statusDot: {
     width: 8,
@@ -601,8 +640,11 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: '#E5E7EB',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
+    lineHeight: 17,
+    includeFontPadding: false,
+    flexShrink: 1,
   },
   settingsIcon: {
     width: 40,
@@ -727,8 +769,9 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    lineHeight: 20,
+    lineHeight: 22,
     color: '#1F2937',
+    includeFontPadding: false,
   },
   messageTime: {
     fontSize: 11,
@@ -743,13 +786,14 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: '#3B82F6',
     borderRadius: 25,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingVertical: 18,
+    paddingHorizontal: 40,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    minHeight: 56,
   },
   primaryButtonDisabled: {
     backgroundColor: '#6B7280',
@@ -759,6 +803,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
   },
   primaryButtonIcon: {
     fontSize: 20,
@@ -766,8 +811,12 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+    lineHeight: 22,
+    includeFontPadding: false,
+    flexShrink: 1,
+    textAlign: 'center',
   },
   recordSection: {
     alignItems: 'center',
@@ -796,6 +845,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+    lineHeight: 18,
+    includeFontPadding: false,
   },
   floatingTextArrow: {
     position: 'absolute',
@@ -847,6 +898,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
+    lineHeight: 16,
+    includeFontPadding: false,
   },
   recordPulse: {
     position: 'absolute',
@@ -893,5 +946,7 @@ const styles = StyleSheet.create({
     color: '#E5E7EB',
     fontSize: 12,
     fontWeight: '500',
+    lineHeight: 16,
+    includeFontPadding: false,
   },
 });

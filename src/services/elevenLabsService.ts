@@ -853,7 +853,8 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
   }
 }
 
+import { config } from '../config/environment';
+
 // Export singleton instance
-const apiKey = (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_ELEVENLABS_API_KEY) || 'test-elevenlabs-api-key';
-console.log(`ElevenLabs: Initializing with API key: ${apiKey.substring(0, 10)}...`);
-export const elevenLabsService = new ElevenLabsServiceImpl(apiKey); 
+console.log(`ElevenLabs: Initializing with API key: ${config.elevenLabsApiKey.substring(0, 10)}...`);
+export const elevenLabsService = new ElevenLabsServiceImpl(config.elevenLabsApiKey); 

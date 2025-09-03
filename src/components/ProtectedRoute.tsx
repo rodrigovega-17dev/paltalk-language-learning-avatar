@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../stores/authStore';
 import { LoginScreen } from './LoginScreen';
 import { SignUpScreen } from './SignUpScreen';
@@ -36,9 +37,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // But don't show loading if user is already authenticated
   if ((isInitializing || isLoading) && !isAuthenticated) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+      </SafeAreaView>
     );
   }
 

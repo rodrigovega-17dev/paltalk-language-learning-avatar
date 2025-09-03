@@ -443,8 +443,10 @@ export class ExpoConversationService implements ConversationService {
   }
 }
 
-// Export singleton instance - in production, API keys should come from secure storage
+import { config } from '../config/environment';
+
+// Export singleton instance - using proper configuration service
 export const conversationService = new ExpoConversationService(
-  (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_OPENAI_API_KEY) || 'test-openai-api-key',
-  (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_SPEECH_TO_TEXT_ENDPOINT) || ''
+  config.openaiApiKey,
+  config.speechToTextEndpoint
 );

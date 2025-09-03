@@ -1,10 +1,7 @@
 import { createClient, SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, AuthResult, UserProfile } from '../types/auth';
-
-// Supabase configuration - these should be environment variables in production
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+import { config } from '../config/environment';
 
 export interface AuthService {
   signUp(email: string, password: string): Promise<AuthResult>;
@@ -23,7 +20,7 @@ class SupabaseAuthService implements AuthService {
 
   constructor() {
     // Configure Supabase with AsyncStorage for session persistence
-    this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    this.supabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
       auth: {
         storage: AsyncStorage,
         autoRefreshToken: true,
@@ -33,9 +30,9 @@ class SupabaseAuthService implements AuthService {
     });
     
     // Check if we have real credentials (not placeholder values)
-    if (SUPABASE_URL !== 'https://placeholder.supabase.co' && 
-        SUPABASE_ANON_KEY !== 'placeholder-anon-key' &&
-        SUPABASE_URL.includes('supabase.co')) {
+    if (config.supabaseUrl !== 'https://placeholder.supabase.co' && 
+        config.supabaseAnonKey !== 'placeholder-anon-key' &&
+        config.supabaseUrl.includes('supabase.co')) {
       this.isConfigured = true;
       console.log('Auth service: Configured with real Supabase credentials and persistent storage, initializing...');
       this.initializeAuth();
