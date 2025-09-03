@@ -1,0 +1,51 @@
+{
+  "name": "language-learning-avatar",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "setup": "./setup-env.sh",
+    "lint": "tsc --noEmit",
+    "prebuild": "expo prebuild --clean",
+    "prebuild:android": "expo prebuild --platform android --clean",
+    "build:android": "./build-android.sh",
+    "build:apk": "cd android && ./gradlew assembleRelease",
+    "build:aab": "cd android && ./gradlew bundleRelease",
+    "clean": "expo prebuild --clean && rm -rf node_modules && npm install"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@supabase/supabase-js": "^2.52.1",
+    "expo": "~53.0.20",
+    "expo-av": "^15.1.7",
+    "expo-file-system": "^18.1.11",
+    "expo-speech": "^13.1.7",
+    "expo-status-bar": "~2.2.3",
+    "lottie-react-native": "7.2.2",
+    "react": "19.0.0",
+    "react-native": "0.79.5",
+    "react-native-purchases": "^9.1.0",
+    "zustand": "^5.0.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.28.0",
+    "@babel/preset-typescript": "^7.27.1",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.2.0",
+    "@types/jest": "^30.0.0",
+    "@types/react": "~19.0.10",
+    "dotenv-cli": "^10.0.0",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "react-test-renderer": "^19.0.0",
+    "typescript": "~5.8.3"
+  },
+  "private": true
+}
