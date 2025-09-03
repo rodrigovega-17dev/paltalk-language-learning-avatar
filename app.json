@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "extra": {
-      "EXPO_PUBLIC_SUPABASE_URL": "https://nlvtxrxcbsqggzjaovyb.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_URL": "",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "",
       "EXPO_PUBLIC_OPENAI_API_KEY": "",
       "EXPO_PUBLIC_ELEVENLABS_API_KEY": "",

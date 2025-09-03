@@ -37,10 +37,10 @@ const getEnvVar = (key: string, fallback: string = ''): string => {
 };
 
 export const config: AppConfig = {
-  supabaseUrl: getEnvVar('EXPO_PUBLIC_SUPABASE_URL', 'https://nlvtxrxcbsqggzjaovyb.supabase.co'),
-  supabaseAnonKey: getEnvVar('EXPO_PUBLIC_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sdnR4cnhjYnNxZ2d6amFvdnliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1NzcyNDYsImV4cCI6MjA2OTE1MzI0Nn0.tSujENjByUNCMNnL67F9wpQsGEK6eR50nNffpzN__oU'),
+  supabaseUrl: getEnvVar('EXPO_PUBLIC_SUPABASE_URL', ''),
+  supabaseAnonKey: getEnvVar('EXPO_PUBLIC_SUPABASE_ANON_KEY', ''),
   openaiApiKey: getEnvVar('EXPO_PUBLIC_OPENAI_API_KEY', ''),
-  elevenLabsApiKey: getEnvVar('EXPO_PUBLIC_ELEVENLABS_API_KEY', 'sk_89e8f7f66056f398e500d0bb5802962f2ac84b95e5cf5927'),
+  elevenLabsApiKey: getEnvVar('EXPO_PUBLIC_ELEVENLABS_API_KEY', ''),
   speechToTextEndpoint: getEnvVar('EXPO_PUBLIC_SPEECH_TO_TEXT_ENDPOINT', ''),
 };
 

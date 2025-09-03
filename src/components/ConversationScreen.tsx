@@ -442,8 +442,6 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
               <Text
                 style={styles.primaryButtonText}
                 numberOfLines={1}
-                adjustsFontSizeToFit={true}
-                minimumFontScale={0.8}
               >
                 {isLoading ? 'Iniciando...' : 'Comenzar a Aprender'}
               </Text>
@@ -503,7 +501,6 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                         numberOfLines={2}
                         adjustsFontSizeToFit={true}
                         minimumFontScale={0.7}
-                        textAlign="center"
                       >
                         {isRecording ? '' : 'Mantén presionado para hablar'}
                       </Text>
@@ -640,9 +637,9 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: '#E5E7EB',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
-    lineHeight: 17,
+    lineHeight: 19,
     includeFontPadding: false,
     flexShrink: 1,
   },
@@ -787,7 +784,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     borderRadius: 25,
     paddingVertical: 18,
-    paddingHorizontal: 40,
+    paddingHorizontal: 50,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -803,20 +800,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+    minWidth: 0,
   },
   primaryButtonIcon: {
-    fontSize: 20,
-    marginRight: 8,
+    fontSize: 22,
+    marginRight: 10,
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    lineHeight: 22,
-    includeFontPadding: false,
-    flexShrink: 1,
     textAlign: 'center',
+    flexShrink: 0,
   },
   recordSection: {
     alignItems: 'center',
@@ -895,10 +890,10 @@ const styles = StyleSheet.create({
   },
   recordButtonText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 18,
     includeFontPadding: false,
   },
   recordPulse: {
@@ -944,9 +939,9 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: '#E5E7EB',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
-    lineHeight: 16,
+    lineHeight: 18,
     includeFontPadding: false,
   },
 });

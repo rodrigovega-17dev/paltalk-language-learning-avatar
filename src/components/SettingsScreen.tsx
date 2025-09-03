@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LanguageSelector } from './LanguageSelector';
 import { CEFRLevelSelector, CEFRLevel } from './CEFRLevelSelector';
 import { VoiceSelector } from './VoiceSelector';

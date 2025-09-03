@@ -36,3 +36,10 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+# APK files
+*.apk
+
+# Build artifacts
+android/app/build/
+android/build/
+ios/build/
