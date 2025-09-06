@@ -16,6 +16,7 @@ import { AvatarAnimationControllerImpl } from '../services/avatarAnimationContro
 import { conversationFlowController } from '../services/conversationFlowController';
 import { ConversationError } from '../services/conversationService';
 import { Message } from '../types/conversation';
+import { suggestionService } from '../services/suggestionService';
 
 interface ConversationScreenProps {
   onNavigateToSettings?: () => void;
@@ -30,6 +31,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   const [showTextDisplay, setShowTextDisplay] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentSuggestion, setCurrentSuggestion] = useState<string>('');
 
   const scrollViewRef = useRef<ScrollView>(null);
   const avatarRef = useRef<AvatarAnimationControllerImpl | null>(null);
@@ -102,6 +104,11 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     conversationFlowController.onMessageAdded = (message: Message) => {
       console.log('ConversationScreen: New message added:', message.role, message.content.substring(0, 50));
       updateMessages();
+      
+      // Generate suggestion after AI response
+      if (message.role === 'assistant') {
+        generateSuggestion(message.content);
+      }
     };
 
     // Initialize speaker state from conversation flow controller
@@ -159,6 +166,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     setIsPaused(false);
     avatarController.playIdleAnimation();
     setMessages([]);
+    setCurrentSuggestion('');
   };
 
   // Update messages from conversation controller
@@ -328,6 +336,29 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     setShowTextDisplay(!showTextDisplay);
   };
 
+  // Generate phonetic suggestion
+  const generateSuggestion = async (aiMessage: string) => {
+    try {
+      const context = conversationFlowController.getCurrentContext();
+      if (!context) return;
+      
+      // Add a small delay to avoid rapid API calls
+      setTimeout(async () => {
+        try {
+          const suggestion = await suggestionService.generateSuggestion(aiMessage, context);
+          setCurrentSuggestion(suggestion);
+        } catch (error) {
+          console.error('Failed to generate suggestion:', error);
+          // Set a contextual fallback
+          setCurrentSuggestion('ai SI'); // I see
+        }
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to generate suggestion:', error);
+      setCurrentSuggestion('');
+    }
+  };
+
 
 
   return (
@@ -374,6 +405,14 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
           }}
           style={styles.avatar}
         />
+
+        {/* Suggestion Display */}
+        {isConversationActive && currentSuggestion && (
+          <View style={styles.suggestionContainer}>
+            <Text style={styles.suggestionLabel}>Puedes decir:</Text>
+            <Text style={styles.suggestionText}>{currentSuggestion}</Text>
+          </View>
+        )}
 
         {/* Floating Action Buttons */}
         <View style={styles.floatingActions}>
@@ -694,6 +733,40 @@ const styles = StyleSheet.create({
   },
   floatingButtonIcon: {
     fontSize: 20,
+  },
+  suggestionContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 24,
+    right: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    minHeight: 60,
+  },
+  suggestionLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  suggestionText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    lineHeight: 20,
+    flexWrap: 'wrap',
   },
   messageOverlay: {
     position: 'absolute',
