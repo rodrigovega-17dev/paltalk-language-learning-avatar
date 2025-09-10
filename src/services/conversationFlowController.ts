@@ -16,6 +16,7 @@ export interface ConversationFlowController {
   setSpeakerEnabled(enabled: boolean): void;
   getSpeakerEnabled(): boolean;
   updateLanguageSettings(targetLanguage: string, cefrLevel: string): void;
+  updateNativeLanguageSettings(nativeLanguage: string): void;
   setTTSSettings(settings: ElevenLabsTTSSettings): void;
   getTTSSettings(): ElevenLabsTTSSettings;
   onSpeechStart?: () => void;
@@ -90,6 +91,7 @@ export class DefaultConversationFlowController implements ConversationFlowContro
 
       this.state.context = {
         targetLanguage: user.profile.targetLanguage,
+        nativeLanguage: user.profile.nativeLanguage,
         cefrLevel: user.profile.cefrLevel,
         conversationHistory: [],
       };
@@ -202,8 +204,8 @@ export class DefaultConversationFlowController implements ConversationFlowContro
     }
 
     try {
-      // Stop recording and get transcription
-      const transcription = await this.conversationService.stopListening();
+      // Stop recording and get transcription with target language for better accuracy
+      const transcription = await this.conversationService.stopListening(this.state.context.targetLanguage);
       this.state.isRecording = false;
 
       if (!transcription || !transcription.trim()) {
@@ -368,6 +370,13 @@ export class DefaultConversationFlowController implements ConversationFlowContro
       this.state.context.targetLanguage = targetLanguage;
       this.state.context.cefrLevel = cefrLevel;
       console.log('ConversationFlowController: Language settings updated:', { targetLanguage, cefrLevel });
+    }
+  }
+
+  updateNativeLanguageSettings(nativeLanguage: string): void {
+    if (this.state.context) {
+      this.state.context.nativeLanguage = nativeLanguage;
+      console.log('ConversationFlowController: Native language settings updated:', { nativeLanguage });
     }
   }
 }

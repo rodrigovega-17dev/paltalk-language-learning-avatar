@@ -10,6 +10,7 @@ export interface AuthService {
   getCurrentUser(): User | null;
   onAuthStateChange(callback: (user: User | null) => void): void;
   updateUserProfile(profileUpdates: Partial<UserProfile>): Promise<void>;
+  resetPassword(email: string): Promise<{ success: boolean; error?: string }>;
 }
 
 class SupabaseAuthService implements AuthService {
@@ -84,6 +85,7 @@ class SupabaseAuthService implements AuthService {
       // Create default profile if it doesn't exist
       const defaultProfile: UserProfile = {
         targetLanguage: 'english',
+        nativeLanguage: 'spanish',
         cefrLevel: 'A1',
         subscriptionStatus: 'trial',
         trialStartDate: new Date(),
@@ -95,6 +97,7 @@ class SupabaseAuthService implements AuthService {
           id: supabaseUser.id,
           email: supabaseUser.email!,
           target_language: defaultProfile.targetLanguage,
+          native_language: defaultProfile.nativeLanguage,
           cefr_level: defaultProfile.cefrLevel,
           subscription_status: defaultProfile.subscriptionStatus,
           trial_start_date: defaultProfile.trialStartDate.toISOString(),
@@ -119,6 +122,7 @@ class SupabaseAuthService implements AuthService {
       email: supabaseUser.email!,
       profile: {
         targetLanguage: profile.target_language,
+        nativeLanguage: profile.native_language || 'spanish', // fallback for older profiles
         cefrLevel: profile.cefr_level,
         subscriptionStatus: profile.subscription_status,
         trialStartDate: new Date(profile.trial_start_date),
@@ -248,6 +252,28 @@ class SupabaseAuthService implements AuthService {
     if (this.authStateCallback) {
       console.log('Auth service: Triggering auth state callback after profile update');
       this.authStateCallback(this.currentUser);
+    }
+  }
+
+  async resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
+    if (!this.isConfigured) {
+      // Return mock success for development
+      console.log('Mock password reset for:', email);
+      return { success: true };
+    }
+
+    try {
+      const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'com.paltalk.languagelearning://reset-password',
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Error de red. Por favor intenta de nuevo.' };
     }
   }
 }

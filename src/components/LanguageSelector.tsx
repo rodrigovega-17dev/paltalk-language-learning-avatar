@@ -18,18 +18,39 @@ interface LanguageSelectorProps {
   selectedLanguage: string;
   onLanguageSelect: (language: string) => void;
   disabled?: boolean;
+  mode?: 'native' | 'target';
+  excludedLanguages?: string[];
 }
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   selectedLanguage,
   onLanguageSelect,
   disabled = false,
+  mode = 'target',
+  excludedLanguages = [],
 }) => {
+  // Dynamic title based on mode
+  const getTitle = () => {
+    switch (mode) {
+      case 'native':
+        return 'Idioma Nativo';
+      case 'target':
+        return 'Idioma Objetivo';
+      default:
+        return 'Idioma Objetivo';
+    }
+  };
+
+  // Filter out excluded languages
+  const availableLanguages = SUPPORTED_LANGUAGES.filter(
+    language => !excludedLanguages.includes(language.code)
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Idioma Objetivo</Text>
+      <Text style={styles.label}>{getTitle()}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollView}>
-        {SUPPORTED_LANGUAGES.map((language) => (
+        {availableLanguages.map((language) => (
           <TouchableOpacity
             key={language.code}
             style={[

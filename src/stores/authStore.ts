@@ -15,6 +15,7 @@ interface AuthActions {
   signOut: () => Promise<void>;
   clearError: () => void;
   setUser: (user: User | null) => void;
+  resetPassword: (email: string) => Promise<boolean>;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -28,12 +29,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   // Actions
   signIn: async (email: string, password: string) => {
+    console.log('Auth store: Starting signIn process');
     set({ isLoading: true, error: null });
     
     try {
       const result = await authService.signIn(email, password);
+      console.log('Auth store: SignIn result:', { hasUser: !!result.user, hasError: !!result.error });
       
       if (result.error) {
+        console.log('Auth store: Setting error:', result.error);
         set({ error: result.error, isLoading: false });
         return false;
       }
@@ -51,6 +55,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       
       return true;
     } catch (error) {
+      console.log('Auth store: Unexpected error:', error);
       set({ 
         error: 'An unexpected error occurred', 
         isLoading: false 
@@ -110,11 +115,35 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   setUser: (user: User | null) => {
-    set({ 
+    set((state) => ({ 
       user, 
       isAuthenticated: !!user,
-      error: null 
-    });
+      // Only clear error if user is successfully set (successful login)
+      // Keep existing error if no user (failed login)
+      error: user ? null : state.error
+    }));
+  },
+
+  resetPassword: async (email: string) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const result = await authService.resetPassword(email);
+      
+      if (result.error) {
+        set({ error: result.error, isLoading: false });
+        return false;
+      }
+      
+      set({ isLoading: false, error: null });
+      return true;
+    } catch (error) {
+      set({ 
+        error: 'Error inesperado. Por favor intenta de nuevo.', 
+        isLoading: false 
+      });
+      return false;
+    }
   },
 }));
 

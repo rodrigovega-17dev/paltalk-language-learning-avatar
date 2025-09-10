@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LanguageSelector } from './LanguageSelector';
+import { LanguagePairIndicator } from './LanguagePairIndicator';
 import { CEFRLevelSelector, CEFRLevel } from './CEFRLevelSelector';
 import { VoiceSelector } from './VoiceSelector';
 import { AudioTagSelector } from './AudioTagSelector';
@@ -97,6 +98,39 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
           }
         } catch (error) {
           console.error('Failed to auto-save language change:', error);
+          // Keep hasChanges true so user can manually save later
+        } finally {
+          setAutoSaving(false);
+        }
+      }
+    }
+  };
+
+  const handleNativeLanguageChange = async (language: string) => {
+    if (profile) {
+      const updatedProfile = { ...profile, nativeLanguage: language };
+      setProfile(updatedProfile);
+      setHasChanges(true);
+      
+      // Auto-save native language changes immediately
+      const currentUser = authService.getCurrentUser();
+      if (currentUser) {
+        try {
+          setAutoSaving(true);
+          const result = await profileService.updateProfile(currentUser.id, {
+            nativeLanguage: language,
+          });
+          
+          if (result.success) {
+            // Update auth service in-memory profile
+            await authService.updateUserProfile({ nativeLanguage: language });
+            // Update conversation flow controller
+            conversationFlowController.updateNativeLanguageSettings(language);
+            setHasChanges(false);
+            console.log('Native language updated successfully to:', language);
+          }
+        } catch (error) {
+          console.error('Failed to auto-save native language change:', error);
           // Keep hasChanges true so user can manually save later
         } finally {
           setAutoSaving(false);
@@ -289,7 +323,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Configuración</Text>
+          <Text style={styles.title}>BlaBla! Configuración</Text>
           <View style={styles.headerRight}>
             {autoSaving && (
               <View style={styles.autoSavingIndicator}>
@@ -313,9 +347,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
             <Text style={styles.sectionTitle}>Preferencias de Aprendizaje</Text>
             
             <LanguageSelector
+              selectedLanguage={profile.nativeLanguage}
+              onLanguageSelect={handleNativeLanguageChange}
+              disabled={saving}
+              mode="native"
+              excludedLanguages={profile.targetLanguage ? [profile.targetLanguage] : []}
+            />
+
+            <LanguageSelector
               selectedLanguage={profile.targetLanguage}
               onLanguageSelect={handleLanguageChange}
               disabled={saving}
+              mode="target"
+              excludedLanguages={profile.nativeLanguage ? [profile.nativeLanguage] : []}
+            />
+
+            <LanguagePairIndicator
+              nativeLanguage={profile.nativeLanguage}
+              targetLanguage={profile.targetLanguage}
             />
 
             <CEFRLevelSelector

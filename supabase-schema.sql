@@ -3,6 +3,7 @@ CREATE TABLE user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   target_language TEXT NOT NULL DEFAULT 'english',
+  native_language TEXT NOT NULL DEFAULT 'english',
   cefr_level TEXT NOT NULL DEFAULT 'A1',
   subscription_status TEXT NOT NULL DEFAULT 'trial',
   trial_start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -24,6 +25,7 @@ CREATE TABLE conversations (
 
 -- Create indexes for better performance
 CREATE INDEX idx_user_profiles_email ON user_profiles(email);
+CREATE INDEX idx_user_profiles_language_pair ON user_profiles(target_language, native_language);
 CREATE INDEX idx_conversations_user_id ON conversations(user_id);
 CREATE INDEX idx_conversations_created_at ON conversations(created_at DESC);
 CREATE INDEX idx_conversations_language ON conversations(language);

@@ -102,7 +102,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin })
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Crear Cuenta</Text>
+          <Text style={styles.title}>Únete a BlaBla</Text>
           <Text style={styles.subtitle}>Comienza tu viaje de aprendizaje de idiomas con una prueba gratuita</Text>
 
           <AuthInput
@@ -121,7 +121,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin })
             value={password}
             onChangeText={setPassword}
             error={passwordError}
-            secureTextEntry
+            isPassword
             placeholder="Crea una contraseña"
           />
 
@@ -130,7 +130,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin })
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             error={confirmPasswordError}
-            secureTextEntry
+            isPassword
             placeholder="Confirma tu contraseña"
           />
 

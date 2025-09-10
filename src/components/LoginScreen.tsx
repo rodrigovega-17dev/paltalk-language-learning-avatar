@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthInput } from './AuthInput';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 import { useAuthStore } from '../stores/authStore';
 
 interface LoginScreenProps {
@@ -22,8 +23,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
   const { signIn, isLoading, error, clearError } = useAuthStore();
+
+  // Watch for auth errors and update local state
+  useEffect(() => {
+    console.log('LoginScreen: Auth error changed:', error);
+    if (error) {
+      console.log('LoginScreen: Setting authError:', error);
+      setAuthError(error);
+    }
+  }, [error]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -53,7 +65,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
   };
 
   const handleLogin = async () => {
+    // Clear any previous errors
     clearError();
+    setAuthError('');
     
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
@@ -62,10 +76,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
       return;
     }
 
-    const success = await signIn(email, password);
-    if (!success && error) {
-      Alert.alert('Error de Inicio de Sesión', error);
-    }
+    // The signIn function will set error in the store if it fails
+    // Our useEffect will catch it and update the UI
+    await signIn(email, password);
   };
 
   return (
@@ -76,7 +89,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
       >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Bienvenido de Vuelta</Text>
+          <Text style={styles.title}>Bienvenido a BlaBla</Text>
           <Text style={styles.subtitle}>Inicia sesión para continuar tu viaje de aprendizaje de idiomas</Text>
 
           <AuthInput
@@ -95,9 +108,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
             value={password}
             onChangeText={setPassword}
             error={passwordError}
-            secureTextEntry
+            isPassword
             placeholder="Ingresa tu contraseña"
           />
+
+          {/* Forgot Password Link */}
+          <TouchableOpacity 
+            style={styles.forgotPasswordContainer}
+            onPress={() => setShowForgotPasswordModal(true)}
+          >
+            <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+          </TouchableOpacity>
+
+          {/* Auth Error Display */}
+          {authError && (
+            <View style={styles.authErrorContainer}>
+              <Text style={styles.authErrorText}>{authError}</Text>
+            </View>
+          )}
 
           <TouchableOpacity
             style={[styles.loginButton, isLoading && styles.buttonDisabled]}
@@ -123,6 +151,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        visible={showForgotPasswordModal}
+        onClose={() => setShowForgotPasswordModal(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -198,5 +232,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
+  },
+  forgotPasswordContainer: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  authErrorContainer: {
+    backgroundColor: '#ffe6e6',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff4444',
+  },
+  authErrorText: {
+    color: '#cc0000',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

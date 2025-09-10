@@ -5,10 +5,13 @@ export interface Message {
   content: string;
   timestamp: Date;
   audioUrl?: string;
+  translated?: boolean;
+  originalContent?: string;
 }
 
 export interface ConversationContext {
   targetLanguage: string;
+  nativeLanguage: string;
   cefrLevel: string;
   conversationHistory: Message[];
 }

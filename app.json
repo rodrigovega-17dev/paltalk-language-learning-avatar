@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "language-learning-avatar",
+    "name": "BlaBla!",
     "slug": "language-learning-avatar",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +15,7 @@
       "EXPO_PUBLIC_SPEECH_TO_TEXT_ENDPOINT": ""
     },
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

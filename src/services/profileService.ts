@@ -45,6 +45,9 @@ class SupabaseProfileService implements ProfileService {
       if (profile.targetLanguage !== undefined) {
         updateData.target_language = profile.targetLanguage;
       }
+      if (profile.nativeLanguage !== undefined) {
+        updateData.native_language = profile.nativeLanguage;
+      }
       if (profile.cefrLevel !== undefined) {
         updateData.cefr_level = profile.cefrLevel;
       }
@@ -81,6 +84,7 @@ class SupabaseProfileService implements ProfileService {
       return {
         profile: {
           targetLanguage: 'english',
+          nativeLanguage: 'spanish',
           cefrLevel: 'B1',
           subscriptionStatus: 'trial',
           trialStartDate: new Date(),
@@ -106,6 +110,7 @@ class SupabaseProfileService implements ProfileService {
         // Create default profile if it doesn't exist
         const defaultProfile: UserProfile = {
           targetLanguage: 'english',
+          nativeLanguage: 'spanish',
           cefrLevel: 'A1',
           subscriptionStatus: 'trial',
           trialStartDate: new Date(),
@@ -117,6 +122,7 @@ class SupabaseProfileService implements ProfileService {
             id: userId,
             email: 'user@example.com', // We don't have email in this context
             target_language: defaultProfile.targetLanguage,
+            native_language: defaultProfile.nativeLanguage,
             cefr_level: defaultProfile.cefrLevel,
             subscription_status: defaultProfile.subscriptionStatus,
             trial_start_date: defaultProfile.trialStartDate.toISOString(),
@@ -144,6 +150,7 @@ class SupabaseProfileService implements ProfileService {
       return {
         profile: {
           targetLanguage: profile.target_language,
+          nativeLanguage: profile.native_language || 'spanish', // fallback for older profiles
           cefrLevel: profile.cefr_level,
           subscriptionStatus: profile.subscription_status,
           trialStartDate: new Date(profile.trial_start_date),

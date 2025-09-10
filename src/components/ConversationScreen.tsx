@@ -17,6 +17,7 @@ import { conversationFlowController } from '../services/conversationFlowControll
 import { ConversationError } from '../services/conversationService';
 import { Message } from '../types/conversation';
 import { suggestionService } from '../services/suggestionService';
+import { authService } from '../services/authService';
 
 interface ConversationScreenProps {
   onNavigateToSettings?: () => void;
@@ -342,10 +343,22 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
       const context = conversationFlowController.getCurrentContext();
       if (!context) return;
       
+      // Get user profile to access native language
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser?.profile) {
+        console.warn('No user profile available for suggestion generation');
+        return;
+      }
+      
       // Add a small delay to avoid rapid API calls
       setTimeout(async () => {
         try {
-          const suggestion = await suggestionService.generateSuggestion(aiMessage, context);
+          const suggestion = await suggestionService.generateSuggestion(
+            aiMessage, 
+            context,
+            currentUser.profile.nativeLanguage,
+            currentUser.profile.targetLanguage
+          );
           setCurrentSuggestion(suggestion);
         } catch (error) {
           console.error('Failed to generate suggestion:', error);
@@ -383,7 +396,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                 adjustsFontSizeToFit={true}
                 minimumFontScale={0.7}
               >
-                {!isConversationActive ? 'Listo para chatear' : isPaused ? 'Pausado' : 'Activo'}
+                {!isConversationActive ? 'BlaBla! Listo para chatear' : isPaused ? 'Pausado' : 'Activo'}
               </Text>
             </View>
 

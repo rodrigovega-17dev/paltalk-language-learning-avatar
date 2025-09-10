@@ -3,10 +3,11 @@ import { Audio } from 'expo-av';
 import { ConversationContext, Message, ConversationSession, ElevenLabsTTSSettings } from '../types/conversation';
 import { conversationStorageService, ConversationStorageService } from './conversationStorageService';
 import { elevenLabsService } from './elevenLabsService';
+import { authService } from './authService';
 
 export interface ConversationService {
   startListening(): Promise<void>;
-  stopListening(): Promise<string>;
+  stopListening(targetLanguage?: string): Promise<string>;
   sendMessageToChatGPT(message: string, context: ConversationContext): Promise<string>;
   speakText(text: string, language: string, ttsSettings: ElevenLabsTTSSettings, onSpeechStart?: () => void, onSpeechEnd?: () => void): Promise<void>;
   pauseConversation(): void;
@@ -120,7 +121,7 @@ export class ExpoConversationService implements ConversationService {
     }
   }
 
-  async stopListening(): Promise<string> {
+  async stopListening(targetLanguage?: string): Promise<string> {
     if (!this.isRecording || !this.recording) {
       throw new Error('Not currently recording');
     }
@@ -136,7 +137,7 @@ export class ExpoConversationService implements ConversationService {
       }
 
       // Convert audio to text using speech-to-text service
-      const transcription = await this.transcribeAudio(uri);
+      const transcription = await this.transcribeAudio(uri, targetLanguage);
       return transcription;
     } catch (error) {
       const conversationError: ConversationError = {
@@ -148,7 +149,7 @@ export class ExpoConversationService implements ConversationService {
     }
   }
 
-  private async transcribeAudio(audioUri: string): Promise<string> {
+  private async transcribeAudio(audioUri: string, targetLanguage?: string): Promise<string> {
     try {
       console.log('Transcribing audio with OpenAI Whisper...');
 
@@ -160,6 +161,16 @@ export class ExpoConversationService implements ConversationService {
         name: 'recording.m4a',
       } as any);
       formData.append('model', 'whisper-1');
+      
+      // Add language parameter if provided for better transcription accuracy
+      if (targetLanguage) {
+        // Convert language name to ISO code for Whisper API
+        const languageCode = this.getLanguageCode(targetLanguage);
+        if (languageCode) {
+          formData.append('language', languageCode);
+          console.log(`Using language code '${languageCode}' for transcription`);
+        }
+      }
 
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
@@ -187,6 +198,23 @@ export class ExpoConversationService implements ConversationService {
       };
       throw conversationError;
     }
+  }
+
+  private getLanguageCode(language: string): string | null {
+    const languageCodes: { [key: string]: string } = {
+      'english': 'en',
+      'spanish': 'es', 
+      'french': 'fr',
+      'german': 'de',
+      'italian': 'it',
+      'portuguese': 'pt',
+      'russian': 'ru',
+      'chinese': 'zh',
+      'japanese': 'ja',
+      'korean': 'ko'
+    };
+    
+    return languageCodes[language.toLowerCase()] || null;
   }
 
   async sendMessageToChatGPT(message: string, context: ConversationContext): Promise<string> {
@@ -224,7 +252,7 @@ export class ExpoConversationService implements ConversationService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini',
           messages,
           max_tokens: 150,
           temperature: 0.7,
@@ -399,8 +427,13 @@ export class ExpoConversationService implements ConversationService {
       const conversation = result.data;
       this.currentConversation = conversation;
 
+      // Get native language from current user profile since it's not stored in conversation
+      const user = authService.getCurrentUser();
+      const nativeLanguage = user?.profile?.nativeLanguage || 'spanish'; // fallback to spanish
+
       return {
         targetLanguage: conversation.language,
+        nativeLanguage: nativeLanguage,
         cefrLevel: conversation.cefrLevel,
         conversationHistory: conversation.messages
       };
