@@ -11,6 +11,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AndroidText } from './AndroidText';
 import { AvatarContainer, useAvatarController } from './AvatarContainer';
 import { AvatarAnimationControllerImpl } from '../services/avatarAnimationController';
 import { conversationFlowController } from '../services/conversationFlowController';
@@ -433,14 +434,14 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
           <View style={styles.headerContent}>
             <View style={styles.statusIndicator}>
               <View style={[styles.statusDot, isConversationActive && !isPaused && styles.statusActive]} />
-              <Text
+              <AndroidText
                 style={styles.statusText}
                 numberOfLines={1}
                 adjustsFontSizeToFit={true}
                 minimumFontScale={0.7}
               >
                 {!isConversationActive ? 'BlaBla! Listo para chatear' : isPaused ? 'Pausado' : 'Activo'}
-              </Text>
+              </AndroidText>
             </View>
 
             {onNavigateToSettings && (
@@ -485,20 +486,20 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
       {showTextDisplay && (
         <Animated.View style={styles.messageOverlay}>
           <View style={styles.messageHeader}>
-            <Text style={styles.messageHeaderText}>Conversación</Text>
+            <AndroidText style={styles.messageHeaderText}>Conversación</AndroidText>
             <View style={styles.messageHeaderButtons}>
               <TouchableOpacity
                 onPress={handleToggleTranslation}
                 style={[styles.translateButton, isTranslating && styles.translateButtonDisabled]}
                 disabled={isTranslating || messages.length === 0}
               >
-                <Text style={styles.translateIcon}>🌐</Text>
-                <Text style={styles.translateText}>
+                <AndroidText style={styles.translateIcon}>🌐</AndroidText>
+                <AndroidText style={styles.translateText}>
                   {isTranslating ? 'Traduciendo...' : showTranslated ? 'Original' : 'Traducir'}
-                </Text>
+                </AndroidText>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleToggleTextDisplay}>
-                <Text style={styles.closeButton}>✕</Text>
+                <AndroidText style={styles.closeButton}>✕</AndroidText>
               </TouchableOpacity>
             </View>
           </View>
@@ -548,13 +549,13 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
             disabled={isLoading}
           >
             <View style={styles.primaryButtonContent}>
-              <Text style={styles.primaryButtonIcon}>🚀</Text>
-              <Text
+              <AndroidText style={styles.primaryButtonIcon}>🚀</AndroidText>
+              <AndroidText
                 style={styles.primaryButtonText}
                 numberOfLines={1}
               >
                 {isLoading ? 'Iniciando...' : 'Comenzar a Aprender'}
-              </Text>
+              </AndroidText>
             </View>
           </TouchableOpacity>
         ) : (

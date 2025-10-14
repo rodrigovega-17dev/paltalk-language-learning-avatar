@@ -10,6 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AndroidText } from './AndroidText';
 import { AuthInput } from './AuthInput';
 import { useAuthStore } from '../stores/authStore';
 
@@ -151,9 +152,9 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({ onNavigateToLogin })
           </TouchableOpacity>
 
           <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>¿Ya tienes una cuenta? </Text>
+            <AndroidText style={styles.loginText}>¿Ya tienes una cuenta? </AndroidText>
             <TouchableOpacity onPress={onNavigateToLogin}>
-              <Text style={styles.loginLink}>Iniciar Sesión</Text>
+              <AndroidText style={styles.loginLink}>Iniciar Sesión</AndroidText>
             </TouchableOpacity>
           </View>
         </View>

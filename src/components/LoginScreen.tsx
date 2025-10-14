@@ -10,6 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AndroidText } from './AndroidText';
 import { AuthInput } from './AuthInput';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 import { useAuthStore } from '../stores/authStore';
@@ -113,17 +114,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
           />
 
           {/* Forgot Password Link */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.forgotPasswordContainer}
             onPress={() => setShowForgotPasswordModal(true)}
           >
-            <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+            <AndroidText style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</AndroidText>
           </TouchableOpacity>
 
           {/* Auth Error Display */}
           {authError && (
             <View style={styles.authErrorContainer}>
-              <Text style={styles.authErrorText}>{authError}</Text>
+              <AndroidText style={styles.authErrorText}>{authError}</AndroidText>
             </View>
           )}
 
@@ -132,20 +133,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
             onPress={handleLogin}
             disabled={isLoading}
           >
-            <Text 
+            <AndroidText
               style={styles.loginButtonText}
               numberOfLines={1}
               adjustsFontSizeToFit={true}
               minimumFontScale={0.8}
             >
               {isLoading ? 'Iniciando Sesión...' : 'Iniciar Sesión'}
-            </Text>
+            </AndroidText>
           </TouchableOpacity>
 
           <View style={styles.signUpContainer}>
-            <Text style={styles.signUpText}>¿No tienes una cuenta? </Text>
+            <AndroidText style={styles.signUpText}>¿No tienes una cuenta? </AndroidText>
             <TouchableOpacity onPress={onNavigateToSignUp}>
-              <Text style={styles.signUpLink}>Registrarse</Text>
+              <AndroidText style={styles.signUpLink}>Registrarse</AndroidText>
             </TouchableOpacity>
           </View>
         </View>

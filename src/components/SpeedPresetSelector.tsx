@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Alert, TextStyle } from 'react-native';
+import { AndroidText } from './AndroidText';
 
 interface SpeedPreset {
   value: number;
@@ -50,12 +51,12 @@ export const SpeedPresetSelector: React.FC<SpeedPresetSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Velocidad del Habla</Text>
+      <AndroidText style={styles.label}>Velocidad del Habla</AndroidText>
       <View style={styles.presetsContainer}>
         {SPEED_PRESETS.map((preset) => {
           const isSelected = closestSpeed === preset.value;
           const isTesting = testing === preset.value;
-          
+
           return (
             <View key={preset.value} style={styles.presetWrapper}>
               <TouchableOpacity
@@ -67,44 +68,44 @@ export const SpeedPresetSelector: React.FC<SpeedPresetSelectorProps> = ({
                 onPress={() => !disabled && onSpeedSelect(preset.value)}
                 disabled={disabled}
               >
-                <Text
+                <AndroidText
                   style={[
                     styles.presetLabel,
                     isSelected && styles.selectedLabel,
                     disabled && styles.disabledText,
-                  ]}
+                  ].filter(Boolean) as TextStyle[]}
                 >
                   {preset.label}
-                </Text>
-                <Text
+                </AndroidText>
+                <AndroidText
                   style={[
                     styles.presetDescription,
                     isSelected && styles.selectedDescription,
                     disabled && styles.disabledText,
-                  ]}
+                  ].filter(Boolean) as TextStyle[]}
                 >
                   {preset.description}
-                </Text>
-                <Text
+                </AndroidText>
+                <AndroidText
                   style={[
                     styles.presetValue,
                     isSelected && styles.selectedValue,
                     disabled && styles.disabledText,
-                  ]}
+                  ].filter(Boolean) as TextStyle[]}
                 >
                   {preset.value}x
-                </Text>
+                </AndroidText>
               </TouchableOpacity>
-              
+
               {onTestSpeed && (
                 <TouchableOpacity
                   style={[styles.testButton, isTesting && styles.testButtonTesting]}
                   onPress={() => handleTestSpeed(preset.value)}
                   disabled={disabled || isTesting}
                 >
-                  <Text style={styles.testButtonText}>
+                  <AndroidText style={styles.testButtonText}>
                     {isTesting ? '...' : '🎵'}
-                  </Text>
+                  </AndroidText>
                 </TouchableOpacity>
               )}
             </View>

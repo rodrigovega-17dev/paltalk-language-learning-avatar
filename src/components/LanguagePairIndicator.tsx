@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { AndroidText } from './AndroidText';
 
 interface LanguagePairIndicatorProps {
   nativeLanguage?: string;
@@ -42,13 +43,13 @@ export const LanguagePairIndicator: React.FC<LanguagePairIndicatorProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.languagePair}>
-        <Text style={styles.languageText}>{nativeDisplayName}</Text>
-        <Text style={styles.arrow}>→</Text>
-        <Text style={styles.languageText}>{targetDisplayName}</Text>
+        <AndroidText style={styles.languageText}>{nativeDisplayName}</AndroidText>
+        <AndroidText style={styles.arrow}>→</AndroidText>
+        <AndroidText style={styles.languageText}>{targetDisplayName}</AndroidText>
       </View>
-      <Text style={styles.description}>
+      <AndroidText style={styles.description}>
         Aprendiendo {targetDisplayName} desde {nativeDisplayName}
-      </Text>
+      </AndroidText>
     </View>
   );
 };
