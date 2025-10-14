@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../stores/authStore';
 import { LoginScreen } from './LoginScreen';
@@ -19,6 +19,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   useEffect(() => {
     // Give some time for the auth state to initialize
     const timer = setTimeout(() => {
+      console.log('ProtectedRoute: Initial timeout completed, stopping initialization');
       setIsInitializing(false);
     }, 1000);
 
@@ -27,15 +28,33 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // Additional effect to handle auth state changes
   useEffect(() => {
-    if (isAuthenticated && user && isInitializing) {
-      console.log('ProtectedRoute: User authenticated during initialization, stopping loading');
+    console.log('ProtectedRoute: Auth state changed', {
+      isAuthenticated,
+      hasUser: !!user,
+      userEmail: user?.email,
+      isLoading,
+      isInitializing
+    });
+
+    if (isAuthenticated && user) {
+      console.log('ProtectedRoute: User authenticated, stopping initialization immediately');
       setIsInitializing(false);
     }
-  }, [isAuthenticated, user, isInitializing]);
+  }, [isAuthenticated, user, isLoading, isInitializing]);
 
   // Show loading spinner while initializing or during auth operations
-  // But don't show loading if user is already authenticated
-  if ((isInitializing || isLoading) && !isAuthenticated) {
+  // But NEVER show loading if user is authenticated
+  const shouldShowLoading = (isInitializing || isLoading) && !isAuthenticated;
+
+  console.log('ProtectedRoute: Render decision', {
+    shouldShowLoading,
+    isInitializing,
+    isLoading,
+    isAuthenticated,
+    hasUser: !!user
+  });
+
+  if (shouldShowLoading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
@@ -45,6 +64,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // If user is authenticated, render the protected content
   if (isAuthenticated && user) {
+    console.log('ProtectedRoute: Rendering protected content');
     return <>{children}</>;
   }
 

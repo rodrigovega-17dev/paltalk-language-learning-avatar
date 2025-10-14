@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, TextStyle } from 'react-native';
+import { AndroidText } from './AndroidText';
 
 export type CEFRLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 
@@ -55,7 +56,7 @@ export const CEFRLevelSelector: React.FC<CEFRLevelSelectorProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Nivel de Competencia (MCER)</Text>
+      <AndroidText style={styles.label}>Nivel de Competencia (MCER)</AndroidText>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollView}>
         {CEFR_LEVELS.map((levelInfo) => (
           <TouchableOpacity
@@ -68,35 +69,35 @@ export const CEFRLevelSelector: React.FC<CEFRLevelSelectorProps> = ({
             onPress={() => !disabled && onLevelSelect(levelInfo.level)}
             disabled={disabled}
           >
-            <Text
+            <AndroidText
               style={[
                 styles.levelCode,
                 selectedLevel === levelInfo.level && styles.selectedLevelCode,
                 disabled && styles.disabledText,
-              ]}
+              ].filter(Boolean) as TextStyle[]}
             >
               {levelInfo.level}
-            </Text>
-            <Text
+            </AndroidText>
+            <AndroidText
               style={[
                 styles.levelName,
                 selectedLevel === levelInfo.level && styles.selectedText,
                 disabled && styles.disabledText,
-              ]}
+              ].filter(Boolean) as TextStyle[]}
               numberOfLines={1}
               adjustsFontSizeToFit={true}
               minimumFontScale={0.8}
             >
               {levelInfo.name}
-            </Text>
-            <Text
+            </AndroidText>
+            <AndroidText
               style={[
                 styles.levelDescription,
                 disabled && styles.disabledText,
-              ]}
+              ].filter(Boolean) as TextStyle[]}
             >
               {levelInfo.description}
-            </Text>
+            </AndroidText>
           </TouchableOpacity>
         ))}
       </ScrollView>

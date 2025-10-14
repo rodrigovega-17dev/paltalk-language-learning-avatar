@@ -12,7 +12,8 @@
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "",
       "EXPO_PUBLIC_OPENAI_API_KEY": "",
       "EXPO_PUBLIC_ELEVENLABS_API_KEY": "",
-      "EXPO_PUBLIC_SPEECH_TO_TEXT_ENDPOINT": ""
+      "EXPO_PUBLIC_SPEECH_TO_TEXT_ENDPOINT": "",
+      "EXPO_PUBLIC_GOOGLE_TRANSLATE_API_KEY": ""
     },
     "splash": {
       "image": "./assets/icon.png",

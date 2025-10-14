@@ -6,6 +6,7 @@ export interface AppConfig {
   openaiApiKey: string;
   elevenLabsApiKey: string;
   speechToTextEndpoint: string;
+  googleTranslateApiKey: string;
 }
 
 // Get environment variables from Expo Constants (works in both dev and production)
@@ -42,6 +43,7 @@ export const config: AppConfig = {
   openaiApiKey: getEnvVar('EXPO_PUBLIC_OPENAI_API_KEY', ''),
   elevenLabsApiKey: getEnvVar('EXPO_PUBLIC_ELEVENLABS_API_KEY', ''),
   speechToTextEndpoint: getEnvVar('EXPO_PUBLIC_SPEECH_TO_TEXT_ENDPOINT', ''),
+  googleTranslateApiKey: getEnvVar('EXPO_PUBLIC_GOOGLE_TRANSLATE_API_KEY', ''),
 };
 
 // Debug logging (only in development)

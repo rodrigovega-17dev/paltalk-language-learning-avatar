@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AndroidText } from './AndroidText';
 import { LanguageSelector } from './LanguageSelector';
 import { LanguagePairIndicator } from './LanguagePairIndicator';
 import { CEFRLevelSelector, CEFRLevel } from './CEFRLevelSelector';
@@ -300,7 +301,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Cargando perfil...</Text>
+          <AndroidText style={styles.loadingText}>Cargando perfil...</AndroidText>
         </View>
       </SafeAreaView>
     );
@@ -310,9 +311,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Error al cargar el perfil</Text>
+          <AndroidText style={styles.errorText}>Error al cargar el perfil</AndroidText>
           <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
+            <AndroidText style={styles.retryButtonText}>Reintentar</AndroidText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -323,20 +324,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>BlaBla! Configuración</Text>
+          <AndroidText style={styles.title}>BlaBla! Configuración</AndroidText>
           <View style={styles.headerRight}>
             {autoSaving && (
               <View style={styles.autoSavingIndicator}>
                 <ActivityIndicator size="small" color="#007AFF" />
-                <Text style={styles.autoSavingText}>Guardando...</Text>
+                <AndroidText style={styles.autoSavingText}>Guardando...</AndroidText>
               </View>
             )}
             {(onClose || onNavigateBack) && (
-              <TouchableOpacity 
-                style={styles.closeButton} 
+              <TouchableOpacity
+                style={styles.closeButton}
                 onPress={onNavigateBack || onClose}
               >
-                <Text style={styles.closeButtonText}>✕</Text>
+                <AndroidText style={styles.closeButtonText}>✕</AndroidText>
               </TouchableOpacity>
             )}
           </View>
@@ -344,7 +345,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Preferencias de Aprendizaje</Text>
+            <AndroidText style={styles.sectionTitle}>Preferencias de Aprendizaje</AndroidText>
             
             <LanguageSelector
               selectedLanguage={profile.nativeLanguage}
@@ -375,10 +376,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Configuración de Voz</Text>
-            <Text style={styles.sectionDescription}>
+            <AndroidText style={styles.sectionTitle}>Configuración de Voz</AndroidText>
+            <AndroidText style={styles.sectionDescription}>
               Voces de IA de alta calidad impulsadas por ElevenLabs
-            </Text>
+            </AndroidText>
             
             <VoiceSelector
               language={profile?.targetLanguage || 'english'}
@@ -409,15 +410,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
           )}
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Estado de Suscripción</Text>
+            <AndroidText style={styles.sectionTitle}>Estado de Suscripción</AndroidText>
             <View style={styles.subscriptionInfo}>
-              <Text style={styles.subscriptionStatus}>
+              <AndroidText style={styles.subscriptionStatus}>
                 Estado: {profile.subscriptionStatus.charAt(0).toUpperCase() + profile.subscriptionStatus.slice(1)}
-              </Text>
+              </AndroidText>
               {profile.subscriptionStatus === 'trial' && (
-                <Text style={styles.trialInfo}>
+                <AndroidText style={styles.trialInfo}>
                   Prueba iniciada: {profile.trialStartDate.toLocaleDateString()}
-                </Text>
+                </AndroidText>
               )}
             </View>
           </View>
@@ -432,14 +433,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
                 {saving ? (
                   <ActivityIndicator size="small" color="#FFF" />
                 ) : (
-                  <Text 
+                  <AndroidText
                     style={styles.saveButtonText}
                     numberOfLines={1}
                     adjustsFontSizeToFit={true}
                     minimumFontScale={0.8}
                   >
                     Guardar Cambios
-                  </Text>
+                  </AndroidText>
                 )}
               </TouchableOpacity>
             )}
@@ -449,14 +450,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
               onPress={handleSignOut}
               disabled={saving}
             >
-              <Text 
+              <AndroidText
                 style={styles.signOutButtonText}
                 numberOfLines={1}
                 adjustsFontSizeToFit={true}
                 minimumFontScale={0.8}
               >
                 Cerrar Sesión
-              </Text>
+              </AndroidText>
             </TouchableOpacity>
           </View>
         </ScrollView>

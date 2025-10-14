@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, TextStyle } from 'react-native';
+import { AndroidText } from './AndroidText';
 
 export interface Language {
   code: string;
@@ -48,7 +49,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{getTitle()}</Text>
+      <AndroidText style={styles.label}>{getTitle()}</AndroidText>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollView}>
         {availableLanguages.map((language) => (
           <TouchableOpacity
@@ -61,19 +62,19 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             onPress={() => !disabled && onLanguageSelect(language.code)}
             disabled={disabled}
           >
-            <Text style={styles.flag}>{language.flag}</Text>
-            <Text
+            <AndroidText style={styles.flag}>{language.flag}</AndroidText>
+            <AndroidText
               style={[
                 styles.languageName,
                 selectedLanguage === language.code && styles.selectedText,
                 disabled && styles.disabledText,
-              ]}
+              ].filter(Boolean) as TextStyle[]}
               numberOfLines={1}
               adjustsFontSizeToFit={true}
               minimumFontScale={0.8}
             >
               {language.name}
-            </Text>
+            </AndroidText>
           </TouchableOpacity>
         ))}
       </ScrollView>

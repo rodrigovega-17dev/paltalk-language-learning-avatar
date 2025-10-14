@@ -18,6 +18,7 @@ import { ConversationError } from '../services/conversationService';
 import { Message } from '../types/conversation';
 import { suggestionService } from '../services/suggestionService';
 import { authService } from '../services/authService';
+import { translationService } from '../services/translationService';
 
 interface ConversationScreenProps {
   onNavigateToSettings?: () => void;
@@ -33,6 +34,9 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentSuggestion, setCurrentSuggestion] = useState<string>('');
+  const [showTranslated, setShowTranslated] = useState(false);
+  const [translatedMessages, setTranslatedMessages] = useState<Message[]>([]);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const avatarRef = useRef<AvatarAnimationControllerImpl | null>(null);
@@ -168,6 +172,10 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     avatarController.playIdleAnimation();
     setMessages([]);
     setCurrentSuggestion('');
+    // Reset translation state
+    setShowTranslated(false);
+    setTranslatedMessages([]);
+    setIsTranslating(false);
   };
 
   // Update messages from conversation controller
@@ -337,6 +345,41 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     setShowTextDisplay(!showTextDisplay);
   };
 
+  // Toggle translation
+  const handleToggleTranslation = async () => {
+    if (!showTranslated) {
+      // Translate to native language
+      setIsTranslating(true);
+      try {
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser?.profile) {
+          Alert.alert('Error', 'No se pudo obtener el perfil del usuario');
+          return;
+        }
+
+        const translated = await translationService.translateConversation(
+          messages,
+          currentUser.profile.targetLanguage,
+          currentUser.profile.nativeLanguage
+        );
+
+        setTranslatedMessages(translated);
+        setShowTranslated(true);
+      } catch (error) {
+        console.error('Translation error:', error);
+        Alert.alert(
+          'Error',
+          'No se pudo traducir la conversación. Verifica tu API key de Google Translate en la configuración.'
+        );
+      } finally {
+        setIsTranslating(false);
+      }
+    } else {
+      // Show original messages
+      setShowTranslated(false);
+    }
+  };
+
   // Generate phonetic suggestion
   const generateSuggestion = async (aiMessage: string) => {
     try {
@@ -443,9 +486,21 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
         <Animated.View style={styles.messageOverlay}>
           <View style={styles.messageHeader}>
             <Text style={styles.messageHeaderText}>Conversación</Text>
-            <TouchableOpacity onPress={handleToggleTextDisplay}>
-              <Text style={styles.closeButton}>✕</Text>
-            </TouchableOpacity>
+            <View style={styles.messageHeaderButtons}>
+              <TouchableOpacity
+                onPress={handleToggleTranslation}
+                style={[styles.translateButton, isTranslating && styles.translateButtonDisabled]}
+                disabled={isTranslating || messages.length === 0}
+              >
+                <Text style={styles.translateIcon}>🌐</Text>
+                <Text style={styles.translateText}>
+                  {isTranslating ? 'Traduciendo...' : showTranslated ? 'Original' : 'Traducir'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleToggleTextDisplay}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <ScrollView
             ref={scrollViewRef}
@@ -453,7 +508,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.messageContent}
           >
-            {messages.map((message) => (
+            {(showTranslated ? translatedMessages : messages).map((message) => (
               <Animated.View
                 key={message.id}
                 style={[
@@ -468,6 +523,9 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                 </View>
                 <View style={styles.messageBubble}>
                   <Text style={styles.messageText}>{message.content}</Text>
+                  {showTranslated && message.translated && (
+                    <Text style={styles.translatedBadge}>Traducido</Text>
+                  )}
                   <Text style={styles.messageTime}>
                     {message.timestamp.toLocaleTimeString([], {
                       hour: '2-digit',
@@ -808,6 +866,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1F2937',
   },
+  messageHeaderButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  translateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  translateButtonDisabled: {
+    opacity: 0.5,
+  },
+  translateIcon: {
+    fontSize: 16,
+    marginRight: 4,
+  },
+  translateText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#3B82F6',
+  },
   closeButton: {
     fontSize: 18,
     color: '#6B7280',
@@ -860,6 +945,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#6B7280',
     marginTop: 4,
+  },
+  translatedBadge: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    marginTop: 4,
+    opacity: 0.7,
   },
   bottomControls: {
     paddingHorizontal: 24,
