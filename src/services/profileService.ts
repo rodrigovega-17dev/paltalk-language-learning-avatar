@@ -57,6 +57,18 @@ class SupabaseProfileService implements ProfileService {
       if (profile.trialStartDate !== undefined) {
         updateData.trial_start_date = profile.trialStartDate.toISOString();
       }
+      if (profile.currentStreak !== undefined) {
+        updateData.current_streak = profile.currentStreak;
+      }
+      if (profile.longestStreak !== undefined) {
+        updateData.longest_streak = profile.longestStreak;
+      }
+      if (profile.lastInteractionDate !== undefined) {
+        updateData.last_interaction_date = profile.lastInteractionDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      }
+      if (profile.streakFreezeCount !== undefined) {
+        updateData.streak_freeze_count = profile.streakFreezeCount;
+      }
 
       updateData.updated_at = new Date().toISOString();
 
@@ -88,6 +100,10 @@ class SupabaseProfileService implements ProfileService {
           cefrLevel: 'B1',
           subscriptionStatus: 'trial',
           trialStartDate: new Date(),
+          currentStreak: 0,
+          longestStreak: 0,
+          lastInteractionDate: undefined,
+          streakFreezeCount: 0,
         }
       };
     }
@@ -114,6 +130,10 @@ class SupabaseProfileService implements ProfileService {
           cefrLevel: 'A1',
           subscriptionStatus: 'trial',
           trialStartDate: new Date(),
+          currentStreak: 0,
+          longestStreak: 0,
+          lastInteractionDate: undefined,
+          streakFreezeCount: 0,
         };
 
         const { error: insertError } = await this.supabase
@@ -126,6 +146,9 @@ class SupabaseProfileService implements ProfileService {
             cefr_level: defaultProfile.cefrLevel,
             subscription_status: defaultProfile.subscriptionStatus,
             trial_start_date: defaultProfile.trialStartDate.toISOString(),
+            current_streak: defaultProfile.currentStreak,
+            longest_streak: defaultProfile.longestStreak,
+            streak_freeze_count: defaultProfile.streakFreezeCount,
           });
 
         if (insertError) {
@@ -154,6 +177,10 @@ class SupabaseProfileService implements ProfileService {
           cefrLevel: profile.cefr_level,
           subscriptionStatus: profile.subscription_status,
           trialStartDate: new Date(profile.trial_start_date),
+          currentStreak: profile.current_streak || 0,
+          longestStreak: profile.longest_streak || 0,
+          lastInteractionDate: profile.last_interaction_date ? new Date(profile.last_interaction_date) : undefined,
+          streakFreezeCount: profile.streak_freeze_count || 0,
         }
       };
     } catch (error) {

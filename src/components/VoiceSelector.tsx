@@ -186,19 +186,17 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
                 </Text>
                 <Text 
                   style={[styles.voiceName, isSelected && styles.voiceNameSelected]}
-                  numberOfLines={1}
+                  numberOfLines={2}
                   adjustsFontSizeToFit={true}
-                  minimumFontScale={0.8}
+                  minimumFontScale={0.9}
                 >
                   {voice.name}
                 </Text>
                 <Text 
                   style={[styles.voiceDescription, isSelected && styles.voiceDescriptionSelected]}
-                  numberOfLines={2}
-                  adjustsFontSizeToFit={true}
-                  minimumFontScale={0.8}
+                  numberOfLines={4}
                 >
-                  {voice.description || 'AI voice'}
+                  {voice.description_es || voice.description || 'Voz generada por IA'}
                 </Text>
                 
 
@@ -209,7 +207,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
                 onPress={() => testVoice(voice)}
                 disabled={disabled}
               >
-                <Text style={styles.testButtonText}>🎵 Test</Text>
+                <Text style={styles.testButtonText}>🎵</Text>
               </TouchableOpacity>
             </View>
           );
@@ -298,12 +296,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   voiceName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#1F2937',
     textAlign: 'center',
-    marginBottom: 4,
-    lineHeight: 20,
+    marginBottom: 6,
+    lineHeight: 22,
     includeFontPadding: false,
   },
   voiceNameSelected: {
@@ -322,11 +320,11 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   voiceDescription: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
     marginBottom: 12,
-    lineHeight: 16,
+    lineHeight: 18,
     includeFontPadding: false,
   },
   voiceDescriptionSelected: {
@@ -334,15 +332,21 @@ const styles = StyleSheet.create({
   },
   testButton: {
     backgroundColor: '#3B82F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     marginTop: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
   testButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 20,
   },
 
 }); 

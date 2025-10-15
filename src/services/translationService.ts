@@ -84,7 +84,9 @@ class GoogleTranslationService implements TranslationService {
       url.searchParams.append('key', apiKey);
       url.searchParams.append('q', message);
       url.searchParams.append('target', targetCode);
-      url.searchParams.append('source', sourceCode);
+      if (sourceCode && sourceCode !== 'auto') {
+        url.searchParams.append('source', sourceCode);
+      }
       url.searchParams.append('format', 'text');
 
       const response = await fetch(url.toString(), {
@@ -129,7 +131,9 @@ class GoogleTranslationService implements TranslationService {
       const url = new URL(this.baseUrl);
       url.searchParams.append('key', apiKey);
       url.searchParams.append('target', targetCode);
-      url.searchParams.append('source', sourceCode);
+      if (sourceCode && sourceCode !== 'auto') {
+        url.searchParams.append('source', sourceCode);
+      }
       url.searchParams.append('format', 'text');
 
       // Add each text as a separate 'q' parameter for batch translation

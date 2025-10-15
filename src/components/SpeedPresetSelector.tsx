@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Alert, TextStyle } from 'react-native';
 import { AndroidText } from './AndroidText';
+import Toast from 'react-native-toast-message';
 
 interface SpeedPreset {
   value: number;
@@ -43,7 +44,11 @@ export const SpeedPresetSelector: React.FC<SpeedPresetSelectorProps> = ({
     try {
       await onTestSpeed(speed);
     } catch (error) {
-      Alert.alert('Prueba Fallida', 'No se pudo reproducir el audio de prueba.');
+      Toast.show({
+        type: 'error',
+        text1: 'No se pudo reproducir',
+        text2: 'Intenta nuevamente en unos segundos.',
+      });
     } finally {
       setTesting(null);
     }
@@ -99,13 +104,15 @@ export const SpeedPresetSelector: React.FC<SpeedPresetSelectorProps> = ({
 
               {onTestSpeed && (
                 <TouchableOpacity
-                  style={[styles.testButton, isTesting && styles.testButtonTesting]}
+                  style={[
+                    styles.testButton,
+                    isTesting && styles.testButtonTesting,
+                    disabled && styles.testButtonDisabled,
+                  ]}
                   onPress={() => handleTestSpeed(preset.value)}
                   disabled={disabled || isTesting}
                 >
-                  <AndroidText style={styles.testButtonText}>
-                    {isTesting ? '...' : '🎵'}
-                  </AndroidText>
+                  <AndroidText style={styles.testButtonText}>🎵</AndroidText>
                 </TouchableOpacity>
               )}
             </View>
@@ -143,8 +150,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
-    minHeight: 80,
-    justifyContent: 'center',
+    minHeight: 110,
+    justifyContent: 'space-between',
   },
   selectedPreset: {
     backgroundColor: '#E3F2FD',
@@ -166,7 +173,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   selectedDescription: {
     color: '#374151',
@@ -183,20 +190,28 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   testButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginTop: 6,
-    minWidth: 30,
+    backgroundColor: '#3B82F6',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginTop: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
   testButtonTesting: {
-    backgroundColor: '#6B7280',
+    backgroundColor: '#2563EB',
+    shadowOpacity: 0.1,
+  },
+  testButtonDisabled: {
+    opacity: 0.5,
   },
   testButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 20,
   },
 });

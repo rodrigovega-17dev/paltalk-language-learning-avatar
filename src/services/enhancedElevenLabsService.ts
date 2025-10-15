@@ -10,6 +10,7 @@ export interface ElevenLabsVoice {
   language: string;
   gender?: string;
   description?: string;
+  description_es?: string;
   verified_languages?: Array<{
     language: string;
     locale: string;
@@ -476,6 +477,7 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
         language: voice.labels?.language || voice.verified_languages?.[0]?.language || 'en',
         gender: voice.labels?.gender,
         description: voice.description,
+        description_es: voice.description_es,
         verified_languages: voice.verified_languages,
         labels: voice.labels,
       }));
@@ -580,6 +582,7 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
         language: voice.labels?.language || 'en',
         gender: voice.labels?.gender,
         description: voice.description,
+        description_es: voice.description_es,
         verified_languages: voice.verified_languages,
         labels: voice.labels,
       };

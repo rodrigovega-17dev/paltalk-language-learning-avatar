@@ -21,7 +21,8 @@ import { authService } from '../services/authService';
 import { conversationFlowController } from '../services/conversationFlowController';
 import { conversationService } from '../services/conversationService';
 import { elevenLabsService } from '../services/elevenLabsService';
-import { UserProfile } from '../types/auth';
+import { streakService } from '../services/streakService';
+import { UserProfile, StreakData } from '../types/auth';
 import { AudioTag } from '../types/conversation';
 
 interface SettingsScreenProps {
@@ -38,9 +39,41 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>('');
   const [selectedAudioTag, setSelectedAudioTag] = useState<AudioTag | undefined>(undefined);
   const [speechSpeed, setSpeechSpeed] = useState<number>(1.0);
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
 
   useEffect(() => {
     loadProfile();
+    
+    // Load streak data when user is authenticated
+    let interval: NodeJS.Timeout;
+    
+    const checkAuthAndLoadStreak = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        if (user && user.id) {
+          console.log('SettingsScreen: User authenticated, loading streak data...');
+          await loadStreakData();
+          // Clear interval once we've loaded the data
+          if (interval) clearInterval(interval);
+        } else {
+          console.log('SettingsScreen: User not authenticated yet, waiting...');
+        }
+      } catch (error) {
+        console.error('SettingsScreen: Error checking auth:', error);
+      }
+    };
+
+    // Check immediately
+    checkAuthAndLoadStreak();
+    
+    // Also check periodically until user is authenticated (every 2 seconds)
+    interval = setInterval(checkAuthAndLoadStreak, 2000);
+    
+    // Cleanup interval after 10 seconds
+    setTimeout(() => {
+      if (interval) clearInterval(interval);
+    }, 10000);
+    
     const currentSettings = conversationFlowController.getTTSSettings();
     setSelectedVoiceId(currentSettings.voiceId || '');
     setSpeechSpeed(currentSettings.speed || 1.0);
@@ -53,6 +86,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
       );
       setSelectedAudioTag(matchingTag);
     }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   const loadProfile = async () => {
@@ -71,6 +108,30 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
     }
     
     setLoading(false);
+  };
+
+  const loadStreakData = async () => {
+    try {
+      console.log('SettingsScreen: Loading streak data...');
+      const user = await authService.getCurrentUser();
+      console.log('SettingsScreen: Current user:', user?.id);
+      
+      if (user) {
+        const result = await streakService.getStreakData(user.id);
+        console.log('SettingsScreen: Streak data result:', result);
+        
+        if (result.success && result.streakData) {
+          setStreakData(result.streakData);
+          console.log('SettingsScreen: Streak data set:', result.streakData);
+        } else {
+          console.warn('SettingsScreen: Failed to load streak data:', result.error);
+        }
+      } else {
+        console.warn('SettingsScreen: No user found');
+      }
+    } catch (error) {
+      console.error('SettingsScreen: Failed to load streak data:', error);
+    }
   };
 
   const handleLanguageChange = async (language: string) => {
@@ -340,6 +401,33 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Streak Section */}
+          {streakData && (
+            <View style={styles.section}>
+              <AndroidText style={styles.sectionTitle}>Racha 🔥</AndroidText>
+              <View style={styles.streakCard}>
+                <View style={styles.streakRow}>
+                  <Text style={styles.streakLabel}>Racha actual:</Text>
+                  <Text style={styles.streakValue}>
+                    🔥 {streakData.currentStreak} días
+                  </Text>
+                </View>
+                <View style={styles.streakRow}>
+                  <Text style={styles.streakLabel}>Mejor racha:</Text>
+                  <Text style={styles.streakValue}>
+                    🏆 {streakData.longestStreak} días
+                  </Text>
+                </View>
+                <View style={styles.streakRow}>
+                  <Text style={styles.streakLabel}>Congelaciones:</Text>
+                  <Text style={styles.streakValue}>
+                    ❄️ {2 - streakData.streakFreezeCount}/2 disponibles
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           <View style={styles.section}>
             <AndroidText style={styles.sectionTitle}>Preferencias de Aprendizaje</AndroidText>
             
@@ -573,6 +661,29 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 16,
     lineHeight: 20,
+  },
+  streakCard: {
+    backgroundColor: '#FFF8E1',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFD54F',
+  },
+  streakRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  streakLabel: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  streakValue: {
+    fontSize: 16,
+    color: '#FF6F00',
+    fontWeight: '600',
   },
   subscriptionInfo: {
     backgroundColor: '#F8F9FA',

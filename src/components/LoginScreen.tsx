@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AndroidText } from './AndroidText';
@@ -90,6 +91,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignUp }) 
       >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
+          <Image source={require('../../assets/icon.png')} style={styles.logo} />
           <Text style={styles.title}>Bienvenido a BlaBla</Text>
           <Text style={styles.subtitle}>Inicia sesión para continuar tu viaje de aprendizaje de idiomas</Text>
 
@@ -187,6 +189,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    alignSelf: 'center',
+    marginBottom: 24,
   },
   title: {
     fontSize: 28,

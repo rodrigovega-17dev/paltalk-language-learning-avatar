@@ -20,6 +20,9 @@ import { Message } from '../types/conversation';
 import { suggestionService } from '../services/suggestionService';
 import { authService } from '../services/authService';
 import { translationService } from '../services/translationService';
+import { streakService } from '../services/streakService';
+import { StreakData } from '../types/auth';
+import Toast from 'react-native-toast-message';
 
 interface ConversationScreenProps {
   onNavigateToSettings?: () => void;
@@ -38,6 +41,7 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   const [showTranslated, setShowTranslated] = useState(false);
   const [translatedMessages, setTranslatedMessages] = useState<Message[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const avatarRef = useRef<AvatarAnimationControllerImpl | null>(null);
@@ -47,6 +51,101 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
   useEffect(() => {
     console.log('ConversationScreen: Avatar ref changed, controller exists:', !!avatarRef.current);
   }, [avatarRef.current]);
+
+  // Load streak data when user is authenticated
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    const checkAuthAndLoadStreak = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        if (user && user.id) {
+          console.log('ConversationScreen: User authenticated, loading streak data...');
+          await loadStreakData();
+          // Clear interval once we've loaded the data
+          if (interval) clearInterval(interval);
+        } else {
+          console.log('ConversationScreen: User not authenticated yet, waiting...');
+        }
+      } catch (error) {
+        console.error('ConversationScreen: Error checking auth:', error);
+      }
+    };
+
+    // Check immediately
+    checkAuthAndLoadStreak();
+    
+    // Also check periodically until user is authenticated (every 2 seconds)
+    interval = setInterval(checkAuthAndLoadStreak, 2000);
+    
+    // Cleanup interval after 10 seconds
+    setTimeout(() => {
+      if (interval) clearInterval(interval);
+    }, 10000);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, []);
+
+  const loadStreakData = async () => {
+    try {
+      console.log('ConversationScreen: Loading streak data...');
+      const user = await authService.getCurrentUser();
+      console.log('ConversationScreen: Current user:', user?.id);
+      
+      if (user) {
+        const result = await streakService.getStreakData(user.id);
+        console.log('ConversationScreen: Streak data result:', result);
+        
+        if (result.success && result.streakData) {
+          setStreakData(result.streakData);
+          console.log('ConversationScreen: Streak data set:', result.streakData);
+        } else {
+          console.warn('ConversationScreen: Failed to load streak data:', result.error);
+        }
+      } else {
+        console.warn('ConversationScreen: No user found');
+      }
+    } catch (error) {
+      console.error('ConversationScreen: Failed to load streak data:', error);
+    }
+  };
+
+  const recordStreakInteraction = async () => {
+    try {
+      console.log('ConversationScreen: Recording streak interaction...');
+      const user = await authService.getCurrentUser();
+      if (user) {
+        console.log('ConversationScreen: Recording interaction for user:', user.id);
+        const result = await streakService.recordInteraction(user.id);
+        console.log('ConversationScreen: Streak recording result:', result);
+        
+        if (result.success && result.streakData) {
+          const newStreak = result.streakData.currentStreak;
+          const oldStreak = streakData?.currentStreak || 0;
+          
+          setStreakData(result.streakData);
+          console.log('ConversationScreen: Updated streak data:', result.streakData);
+          
+          // Show celebration for streak milestones
+          if (newStreak > oldStreak && (newStreak === 7 || newStreak === 30 || newStreak === 100)) {
+            Alert.alert(
+              '¡Racha Increíble! 🔥',
+              `¡Has alcanzado ${newStreak} días consecutivos! ¡Sigue así!`,
+              [{ text: '¡Genial!' }]
+            );
+          }
+        } else {
+          console.warn('ConversationScreen: Failed to record streak interaction:', result.error);
+        }
+      } else {
+        console.warn('ConversationScreen: No user found for streak recording');
+      }
+    } catch (error) {
+      console.error('ConversationScreen: Error recording streak interaction:', error);
+    }
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -245,6 +344,9 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
       ]).start();
 
       await conversationFlowController.handleUserInput();
+      
+      // Record streak interaction after successful user input
+      await recordStreakInteraction();
     } catch (error) {
       setIsRecording(false);
       avatarController.playIdleAnimation();
@@ -334,7 +436,15 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
       avatarController.playIdleAnimation();
 
       if (error && typeof error === 'object' && 'type' in error) {
-        handleConversationError(error as ConversationError);
+        if ((error as ConversationError).type === 'audio') {
+          Toast.show({
+            type: 'info',
+            text1: 'No se pudo grabar',
+            text2: 'Intenta presionar y mantener el botón por un momento.',
+          });
+        } else {
+          handleConversationError(error as ConversationError);
+        }
       }
     } finally {
       setIsLoading(false);
@@ -438,8 +548,9 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                 style={styles.statusText}
                 numberOfLines={1}
                 adjustsFontSizeToFit={true}
-                minimumFontScale={0.7}
+                minimumFontScale={0.9}
               >
+                {streakData ? `🔥 ${streakData.currentStreak} días | ` : ''}
                 {!isConversationActive ? 'BlaBla! Listo para chatear' : isPaused ? 'Pausado' : 'Activo'}
               </AndroidText>
             </View>
@@ -748,9 +859,9 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: '#E5E7EB',
-    fontSize: 15,
-    fontWeight: '500',
-    lineHeight: 19,
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 22,
     includeFontPadding: false,
     flexShrink: 1,
   },

@@ -1,6 +1,7 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { AudioEmotion, AudioTag } from '../types/conversation';
+import { translationService } from './translationService';
 
 export interface ElevenLabsVoice {
   voice_id: string;
@@ -8,6 +9,7 @@ export interface ElevenLabsVoice {
   language: string;
   gender?: string;
   description?: string;
+  description_es?: string;
   verified_languages?: Array<{
     language: string;
     locale: string;
@@ -191,15 +193,27 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
       }
       
       // Transform the API response to our interface format
-      const transformedVoices = (data.voices || []).map((voice: any) => ({
-        voice_id: voice.voice_id,
-        name: voice.name,
-        language: voice.labels?.language || voice.verified_languages?.[0]?.language || 'en',
-        gender: voice.labels?.gender,
-        description: voice.description,
-        verified_languages: voice.verified_languages,
-        labels: voice.labels,
-      }));
+      const transformedVoices = (data.voices || []).map((voice: any) => {
+        const description = voice.description;
+        const language = voice.labels?.language || voice.verified_languages?.[0]?.language || 'en';
+
+        const baseVoice: ElevenLabsVoice = {
+          voice_id: voice.voice_id,
+          name: voice.name,
+          language,
+          gender: voice.labels?.gender,
+          description,
+          description_es: undefined,
+          verified_languages: voice.verified_languages,
+          labels: voice.labels,
+        };
+
+        if (language?.toLowerCase().startsWith('es')) {
+          baseVoice.description_es = baseVoice.description;
+        }
+
+        return baseVoice;
+      });
       
       // Cache the results
       this.voicesCache = transformedVoices;
@@ -207,11 +221,53 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
       
       console.log('ElevenLabs: Transformed and cached voices:', transformedVoices.slice(0, 2));
       
-      return transformedVoices;
+      return this.translateVoicesToSpanish(transformedVoices);
     } catch (error) {
       console.error('Failed to fetch ElevenLabs voices:', error);
       throw error;
     }
+  }
+
+  private async translateVoicesToSpanish(voices: ElevenLabsVoice[]): Promise<ElevenLabsVoice[]> {
+    const voicesToTranslate = voices.filter((voice) => {
+      if (!voice.description) {
+        return false;
+      }
+
+      const language = voice.language?.toLowerCase() || 'en';
+      const isSpanish = language.startsWith('es');
+
+      if (isSpanish) {
+        voice.description_es = voice.description;
+        return false;
+      }
+
+      if (voice.description_es && typeof voice.description_es === 'string') {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (voicesToTranslate.length === 0) {
+      return voices;
+    }
+
+    try {
+      const translations = await Promise.all(
+        voicesToTranslate.map((voice) =>
+          translationService.translateMessage(voice.description as string, voice.language || 'en', 'spanish')
+        )
+      );
+
+      translations.forEach((translation, index) => {
+        voicesToTranslate[index].description_es = translation;
+      });
+    } catch (error) {
+      console.warn('Failed to translate voice descriptions:', error);
+    }
+
+    return voices;
   }
 
   // Enhanced speakText method with emotion and voice parameters and caching

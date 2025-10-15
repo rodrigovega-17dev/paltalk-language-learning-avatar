@@ -89,6 +89,10 @@ class SupabaseAuthService implements AuthService {
         cefrLevel: 'A1',
         subscriptionStatus: 'trial',
         trialStartDate: new Date(),
+        currentStreak: 0,
+        longestStreak: 0,
+        lastInteractionDate: undefined,
+        streakFreezeCount: 0,
       };
 
       const { error: insertError } = await this.supabase
@@ -101,6 +105,9 @@ class SupabaseAuthService implements AuthService {
           cefr_level: defaultProfile.cefrLevel,
           subscription_status: defaultProfile.subscriptionStatus,
           trial_start_date: defaultProfile.trialStartDate.toISOString(),
+          current_streak: defaultProfile.currentStreak,
+          longest_streak: defaultProfile.longestStreak,
+          streak_freeze_count: defaultProfile.streakFreezeCount,
         });
 
       if (insertError) {
@@ -126,6 +133,10 @@ class SupabaseAuthService implements AuthService {
         cefrLevel: profile.cefr_level,
         subscriptionStatus: profile.subscription_status,
         trialStartDate: new Date(profile.trial_start_date),
+        currentStreak: profile.current_streak || 0,
+        longestStreak: profile.longest_streak || 0,
+        lastInteractionDate: profile.last_interaction_date ? new Date(profile.last_interaction_date) : undefined,
+        streakFreezeCount: profile.streak_freeze_count || 0,
       },
     };
   }
@@ -253,6 +264,19 @@ class SupabaseAuthService implements AuthService {
       console.log('Auth service: Triggering auth state callback after profile update');
       this.authStateCallback(this.currentUser);
     }
+  }
+
+  getSupabaseClient(): SupabaseClient | null {
+    if (!this.isConfigured) {
+      console.warn('Auth service: Supabase client requested but service is not configured');
+      return null;
+    }
+
+    return this.supabase;
+  }
+
+  hasValidConfiguration(): boolean {
+    return this.isConfigured;
   }
 
   async resetPassword(email: string): Promise<{ success: boolean; error?: string }> {
