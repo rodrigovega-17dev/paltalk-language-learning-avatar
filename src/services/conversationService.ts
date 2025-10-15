@@ -319,23 +319,18 @@ export class ExpoConversationService implements ConversationService {
 
     try {
       const { useSpeaker, voiceId, speed, emotion, stability, similarityBoost } = ttsSettings;
-      
+
       const selectedVoiceId = voiceId || await elevenLabsService.getDefaultVoiceForLanguage(language);
-      
-      const audioSpeed = speed || 1.0;
-      const audioEmotion = emotion || 'neutral';
-      const audioStability = stability || 0.6;
-      const audioSimilarityBoost = similarityBoost || 0.5;
-      
+
       await elevenLabsService.speakText(
-        text, 
-        selectedVoiceId, 
-        language, 
-        useSpeaker, 
-        audioSpeed,
-        audioEmotion,
-        audioStability,
-        audioSimilarityBoost,
+        text,
+        selectedVoiceId,
+        language,
+        useSpeaker,
+        speed,
+        emotion,
+        stability,
+        similarityBoost,
         onSpeechStart,
         onSpeechEnd
       );

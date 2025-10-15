@@ -2,12 +2,35 @@ import { ElevenLabsServiceImpl, ElevenLabsVoice } from '../services/elevenLabsSe
 import * as FileSystem from 'expo-file-system';
 import { Audio } from 'expo-av';
 
-// Mock dependencies
-jest.mock('expo-file-system');
-jest.mock('expo-av');
+jest.mock('expo-constants', () => ({
+  expoConfig: {
+    extra: {},
+    env: {},
+  },
+  manifest: {
+    extra: {},
+  },
+}));
 
-const mockFileSystem = FileSystem as jest.Mocked<typeof FileSystem>;
-const mockAudio = Audio as jest.Mocked<typeof Audio>;
+// Mock dependencies with explicit factories to avoid Expo ESM issues
+jest.mock('expo-file-system', () => ({
+  cacheDirectory: 'file://cache/',
+  makeDirectoryAsync: jest.fn(),
+  writeAsStringAsync: jest.fn(),
+  deleteAsync: jest.fn(),
+  getInfoAsync: jest.fn(),
+  readAsStringAsync: jest.fn(),
+}));
+
+jest.mock('expo-av', () => ({
+  Audio: {
+    requestPermissionsAsync: jest.fn(),
+    setAudioModeAsync: jest.fn(),
+    Sound: {
+      createAsync: jest.fn(),
+    },
+  },
+}));
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -153,13 +176,21 @@ describe('ElevenLabsServiceImpl', () => {
             voice_settings: {
               stability: 0.6,
               similarity_boost: 0.5
-            }
+            },
+            speech_speed: 1.0
           })
         })
       );
 
+      expect(mockAudio.Sound.createAsync).toHaveBeenCalledWith(
+        { uri: expect.any(String) },
+        expect.objectContaining({
+          rate: 1.0,
+          shouldCorrectPitch: true,
+        })
+      );
+
       expect(mockFileSystem.writeAsStringAsync).toHaveBeenCalled();
-      expect(mockAudio.Sound.createAsync).toHaveBeenCalled();
       expect(mockSound.playAsync).toHaveBeenCalled();
     });
 
@@ -198,8 +229,16 @@ describe('ElevenLabsServiceImpl', () => {
               stability: 0.6,
               similarity_boost: 0.5
             },
-            speed: 1.2 // Should be clamped
+            speech_speed: 1.2 // Should be clamped
           })
+        })
+      );
+
+      expect(mockAudio.Sound.createAsync).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          rate: expect.any(Number),
+          shouldCorrectPitch: true,
         })
       );
     });

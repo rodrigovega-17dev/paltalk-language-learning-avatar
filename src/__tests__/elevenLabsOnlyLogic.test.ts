@@ -310,7 +310,7 @@ describe('ElevenLabs-only TTS Implementation', () => {
               stability: settings.stability,
               similarity_boost: settings.similarityBoost,
             },
-            ...(settings.speed !== 1.0 && { speed: settings.speed }),
+            speech_speed: settings.speed,
           })
         };
       };
@@ -331,7 +331,7 @@ describe('ElevenLabs-only TTS Implementation', () => {
       expect(body.model_id).toBe('eleven_monolingual_v1');
       expect(body.voice_settings.stability).toBe(0.7);
       expect(body.voice_settings.similarity_boost).toBe(0.6);
-      expect(body.speed).toBe(1.1);
+      expect(body.speech_speed).toBe(1.1);
     });
 
     it('should omit speed parameter when it equals 1.0', () => {
@@ -352,7 +352,7 @@ describe('ElevenLabs-only TTS Implementation', () => {
             stability: settings.stability,
             similarity_boost: settings.similarityBoost,
           },
-          ...(settings.speed !== 1.0 && { speed: settings.speed }),
+          speech_speed: settings.speed,
         });
       };
 
@@ -373,8 +373,8 @@ describe('ElevenLabs-only TTS Implementation', () => {
       const normalSpeedBody = JSON.parse(requestWithNormalSpeed);
       const customSpeedBody = JSON.parse(requestWithCustomSpeed);
 
-      expect(normalSpeedBody.speed).toBeUndefined();
-      expect(customSpeedBody.speed).toBe(1.1);
+      expect(normalSpeedBody.speed).toBe(1.0);
+      expect(customSpeedBody.speech_speed).toBe(1.1);
     });
   });
 });

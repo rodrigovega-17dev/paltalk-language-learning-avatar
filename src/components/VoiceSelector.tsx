@@ -49,7 +49,10 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
       
       // If no voice is selected and we have voices, select the first one
       if (!selectedVoiceId && availableVoices.length > 0) {
-        onVoiceSelect(availableVoices[0].voice_id);
+        const controllerVoice = conversationFlowController.getTTSSettings().voiceId;
+        if (!controllerVoice) {
+          onVoiceSelect(availableVoices[0].voice_id);
+        }
       }
     } catch (err) {
       console.error('Failed to load voices:', err);

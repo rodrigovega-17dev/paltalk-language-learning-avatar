@@ -41,17 +41,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
 
   useEffect(() => {
     loadProfile();
-    // ElevenLabs is now the only TTS provider
-    
-    // Load current TTS settings
     const currentSettings = conversationFlowController.getTTSSettings();
+    setSelectedVoiceId(currentSettings.voiceId || '');
     setSpeechSpeed(currentSettings.speed || 1.0);
-    
-    // Load current audio tag if available
+
     if (currentSettings.emotion && currentSettings.speed) {
       const audioTags = elevenLabsService.getAudioTags();
-      const matchingTag = audioTags.find((tag: AudioTag) => 
-        tag.emotion === currentSettings.emotion && 
+      const matchingTag = audioTags.find((tag: AudioTag) =>
+        tag.emotion === currentSettings.emotion &&
         tag.speed === currentSettings.speed
       );
       setSelectedAudioTag(matchingTag);
@@ -189,33 +186,32 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
   const handleAudioTagSelect = (audioTag: AudioTag) => {
     setSelectedAudioTag(audioTag);
     setSpeechSpeed(audioTag.speed);
-    
-    // Update conversation flow controller TTS settings
+
     const currentSettings = conversationFlowController.getTTSSettings();
     const newSettings = {
       ...currentSettings,
       provider: 'elevenlabs' as const,
-      voiceId: selectedVoiceId,
-      useSpeaker: true, // Always use loudspeaker
+      voiceId: currentSettings.voiceId || selectedVoiceId,
+      useSpeaker: true,
       speed: audioTag.speed,
       emotion: audioTag.emotion,
       stability: audioTag.stability,
       similarityBoost: audioTag.similarityBoost,
     };
-    
+
     conversationFlowController.setTTSSettings(newSettings);
   };
 
   const handleSpeedChange = (speed: number) => {
     setSpeechSpeed(speed);
-    
-    // Update conversation flow controller TTS settings
+
     const currentSettings = conversationFlowController.getTTSSettings();
     const newSettings = {
       ...currentSettings,
-      speed: speed,
+      speed,
+      voiceId: currentSettings.voiceId || selectedVoiceId,
     };
-    
+
     conversationFlowController.setTTSSettings(newSettings);
   };
 

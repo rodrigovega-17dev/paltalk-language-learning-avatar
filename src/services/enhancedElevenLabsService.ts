@@ -317,7 +317,7 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
       
       if (cachedAudio) {
         console.log('ElevenLabs: Using cached audio');
-        await this.playAudio(cachedAudio, validatedSettings.useSpeaker);
+        await this.playAudio(cachedAudio, validatedSettings.useSpeaker, validatedSettings.speed);
         this.updateUsageStats(text.length, true);
         return;
       }
@@ -329,7 +329,18 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
       await this.validateVoiceForLanguage(validatedSettings.voiceId);
 
       const modelId = this.getModelForLanguage(validatedSettings.voiceId);
-      const enhancedText = this.addEmotionalContext(text, validatedSettings.emotion);
+
+      const requestBody = {
+        text,
+        model_id: modelId,
+        voice_settings: {
+          stability: validatedSettings.stability,
+          similarity_boost: validatedSettings.similarityBoost,
+        },
+        speech_speed: validatedSettings.speed,
+      };
+
+      console.log('ElevenLabs (enhanced): Making TTS request with speed payload:', JSON.stringify(requestBody));
 
       const response = await fetch(`${this.baseUrl}/text-to-speech/${validatedSettings.voiceId}`, {
         method: 'POST',
@@ -337,15 +348,7 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
           'xi-api-key': this.apiKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          text: enhancedText,
-          model_id: modelId,
-          voice_settings: {
-            stability: validatedSettings.stability,
-            similarity_boost: validatedSettings.similarityBoost,
-          },
-          ...(validatedSettings.speed !== 1.0 && { speed: validatedSettings.speed }),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -359,7 +362,7 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
       const audioUri = await this.cacheAudio(cacheKey, audioArrayBuffer);
       
       // Play the audio
-      await this.playAudio(audioUri, validatedSettings.useSpeaker);
+      await this.playAudio(audioUri, validatedSettings.useSpeaker, validatedSettings.speed);
       
       this.updateUsageStats(text.length, false);
     } catch (error) {
@@ -379,16 +382,27 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
     };
   }
 
-  private async playAudio(audioUri: string, useSpeaker: boolean): Promise<void> {
+  private async playAudio(audioUri: string, useSpeaker: boolean, speed: number): Promise<void> {
+    const playbackRate = this.mapSpeedToPlaybackRate(speed);
+
     const { sound } = await Audio.Sound.createAsync(
       { uri: audioUri },
-      { 
-        shouldPlay: true, 
+      {
+        shouldPlay: true,
         volume: useSpeaker ? 1.0 : 0.8,
-        rate: 1.0,
+        rate: playbackRate,
         shouldCorrectPitch: true,
       }
     );
+
+    try {
+      const pitchQuality = (Audio as any).PitchCorrectionQuality?.High ?? undefined;
+      if (typeof sound.setRateAsync === 'function') {
+        await sound.setRateAsync(playbackRate, true, pitchQuality);
+      }
+    } catch (rateError) {
+      console.warn('ElevenLabs: Failed to apply playback rate in enhanced service:', rateError);
+    }
 
     if (useSpeaker) {
       await this.forceLoudspeaker();
@@ -649,7 +663,7 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
             stability: settings.stability,
             similarity_boost: settings.similarityBoost,
           },
-          ...(settings.speed !== 1.0 && { speed: settings.speed }),
+          speech_speed: settings.speed,
         }),
       });
 
@@ -893,6 +907,16 @@ export class EnhancedElevenLabsServiceImpl implements EnhancedElevenLabsService 
       console.error('ElevenLabs: Audio initialization failed:', error);
       throw new Error('Failed to initialize audio permissions');
     }
+  }
+
+  private mapSpeedToPlaybackRate(speed: number): number {
+    if (speed < 1) {
+      return Math.max(0.5, speed - 0.2);
+    }
+    if (speed > 1) {
+      return Math.min(1.5, speed + 0.2);
+    }
+    return 1.0;
   }
 }
 

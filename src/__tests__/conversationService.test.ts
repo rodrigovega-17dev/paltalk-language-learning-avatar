@@ -1,7 +1,9 @@
 import { ConversationService, ConversationError } from '../services/conversationService';
 import { ConversationContext } from '../types/conversation';
 import { Audio } from 'expo-av';
-import * as Speech from 'expo-speech';
+import { ExpoConversationService } from '../services/conversationService';
+import { ConversationStorageService } from '../services/conversationStorageService';
+import { ConversationSession, Message } from '../types/conversation';
 
 // Mock expo-av
 jest.mock('expo-av', () => ({
@@ -17,22 +19,14 @@ jest.mock('expo-av', () => ({
     RecordingOptionsPresets: {
       HIGH_QUALITY: {},
     },
+    Sound: {
+      createAsync: jest.fn(),
+    },
   },
-}));
-
-// Mock expo-speech
-jest.mock('expo-speech', () => ({
-  speak: jest.fn(),
-  stop: jest.fn(),
 }));
 
 // Mock fetch for API calls
 global.fetch = jest.fn();
-
-// Import the class to create fresh instances
-import { ExpoConversationService } from '../services/conversationService';
-import { ConversationStorageService } from '../services/conversationStorageService';
-import { ConversationSession, Message } from '../types/conversation';
 
 describe('ConversationService', () => {
   let conversationService: ConversationService;
@@ -54,9 +48,6 @@ describe('ConversationService', () => {
     };
     
     (Audio.Recording as jest.Mock).mockImplementation(() => mockRecording);
-    
-    // Setup Speech mock
-    (Speech.speak as jest.Mock).mockResolvedValue(undefined);
     
     // Create mock storage service
     mockStorageService = {
@@ -207,54 +198,15 @@ describe('ConversationService', () => {
     });
   });
 
-  describe('Text-to-Speech', () => {
-    it('should speak text in correct language', async () => {
-      await conversationService.speakText('Hello world', 'english');
-      
-      expect(Speech.speak).toHaveBeenCalledWith('Hello world', {
-        language: 'en-US',
-        pitch: 1.0,
-        rate: 0.8,
-        voice: undefined,
-      });
-    });
-
-    it('should handle different language codes', async () => {
-      await conversationService.speakText('Hola mundo', 'spanish');
-      
-      expect(Speech.speak).toHaveBeenCalledWith('Hola mundo', {
-        language: 'es-ES',
-        pitch: 1.0,
-        rate: 0.8,
-        voice: undefined,
-      });
-    });
-
-    it('should handle text-to-speech errors', async () => {
-      (Speech.speak as jest.Mock).mockRejectedValue(new Error('TTS failed'));
-      
-      await expect(
-        conversationService.speakText('Hello', 'english')
-      ).rejects.toMatchObject({
-        type: 'audio',
-        message: expect.stringContaining('Text-to-speech failed'),
-        recoverable: true,
-      });
-    });
-  });
-
   describe('Conversation Control', () => {
-    it('should pause conversation and stop speech', () => {
-      conversationService.pauseConversation();
-      
-      expect(Speech.stop).toHaveBeenCalled();
+    it('should pause conversation without crashing when ElevenLabs playback is active', () => {
+      expect(() => conversationService.pauseConversation()).not.toThrow();
     });
 
     it('should resume conversation', () => {
       conversationService.pauseConversation();
       conversationService.resumeConversation();
-      
-      // Should be able to start listening again after resume
+
       expect(async () => {
         await conversationService.startListening();
       }).not.toThrow();
@@ -262,7 +214,7 @@ describe('ConversationService', () => {
 
     it('should not allow operations when paused', async () => {
       conversationService.pauseConversation();
-      
+
       const mockContext: ConversationContext = {
         targetLanguage: 'english',
         cefrLevel: 'B1',

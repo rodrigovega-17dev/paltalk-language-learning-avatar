@@ -216,10 +216,10 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
 
   // Enhanced speakText method with emotion and voice parameters and caching
   async speakText(
-    text: string, 
-    voiceId: string, 
-    language: string, 
-    useSpeaker: boolean = true, 
+    text: string,
+    voiceId: string,
+    language: string,
+    useSpeaker: boolean = true,
     speed: number = 1.0,
     emotion: AudioEmotion = 'neutral',
     stability: number = 0.6,
@@ -227,47 +227,34 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
     onSpeechStart?: () => void,
     onSpeechEnd?: () => void
   ): Promise<void> {
-    // Clamp speed to reasonable text modification range (0.5 to 1.5)
-    const clampedSpeed = Math.max(0.5, Math.min(1.5, speed));
+    const clampedSpeed = Math.max(0.7, Math.min(1.2, speed));
     if (speed !== clampedSpeed) {
-      console.log(`ElevenLabs: Speed ${speed} clamped to supported range: ${clampedSpeed}`);
+      console.log(`ElevenLabs: Requested speed ${speed} clamped to ${clampedSpeed}`);
     }
 
-    // Clamp stability and similarity boost to valid ranges (0.0 to 1.0)
     const clampedStability = Math.max(0.0, Math.min(1.0, stability));
     const clampedSimilarityBoost = Math.max(0.0, Math.min(1.0, similarityBoost));
 
     try {
-      // Configure audio session for speaker output
+      await this.validateVoiceForLanguage(voiceId, language);
       await this.initializeAudio(useSpeaker);
 
-      // Validate that the voice is appropriate for the language
-      await this.validateVoiceForLanguage(voiceId, language);
-
-      // Create cache key for this specific audio request (including speed since it affects text generation)
       const cacheKey = this.createCacheKey(text, voiceId, clampedSpeed, emotion, clampedStability, clampedSimilarityBoost);
-      
-      // Check if we have cached audio for this request
       let tempUri = this.audioCache.get(cacheKey);
-      
-      if (!tempUri || !(await FileSystem.getInfoAsync(tempUri)).exists) {
-        // Generate new audio if not cached or file doesn't exist
-        const modelId = this.getModelForLanguage(language);
-        let enhancedText = this.addEmotionalContext(text, emotion);
-        
-        // Apply speed control by modifying text pacing
-        enhancedText = this.applySpeedToText(enhancedText, clampedSpeed);
 
+      if (!tempUri || !(await FileSystem.getInfoAsync(tempUri)).exists) {
+        const modelId = this.getModelForLanguage(language);
         const requestBody = {
-          text: enhancedText,
+          text,
           model_id: modelId,
           voice_settings: {
             stability: clampedStability,
             similarity_boost: clampedSimilarityBoost,
           },
+          speech_speed: clampedSpeed,
         };
 
-        console.log(`ElevenLabs: Making TTS request (speed will be applied during playback: ${clampedSpeed}):`, JSON.stringify(requestBody, null, 2));
+        console.log('ElevenLabs: Making TTS request with speed payload:', JSON.stringify(requestBody));
 
         const response = await fetch(`${this.baseUrl}/text-to-speech/${voiceId}`, {
           method: 'POST',
@@ -282,84 +269,51 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
           throw new Error(`ElevenLabs TTS API error: ${response.status}`);
         }
 
-        // Save audio to cache file
         tempUri = `${FileSystem.cacheDirectory}elevenlabs_${cacheKey}.mp3`;
         const audioArrayBuffer = await response.arrayBuffer();
         const audioBase64 = this.arrayBufferToBase64(audioArrayBuffer);
-        
+
         await FileSystem.writeAsStringAsync(tempUri, audioBase64, {
           encoding: FileSystem.EncodingType.Base64,
         });
 
-        // Cache the file path
         this.audioCache.set(cacheKey, tempUri);
         console.log(`ElevenLabs: Cached audio for key: ${cacheKey}`);
       } else {
         console.log(`ElevenLabs: Using cached audio for key: ${cacheKey}`);
       }
 
-      // Create audio object and play with enhanced volume for loudspeaker
+      const playbackRate = this.mapSpeedToPlaybackRate(clampedSpeed);
+
       const { sound } = await Audio.Sound.createAsync(
         { uri: tempUri },
-        { 
-          shouldPlay: true, 
-          volume: useSpeaker ? 1.0 : 0.8, // Full volume for loudspeaker
-          rate: 1.0, // Keep normal playback rate to maintain natural pitch
-          shouldCorrectPitch: false,
+        {
+          shouldPlay: true,
+          volume: useSpeaker ? 1.0 : 0.8,
+          rate: playbackRate,
+          shouldCorrectPitch: true,
         }
       );
 
-      console.log(`ElevenLabs: Playing audio with natural speech pacing (speed: ${clampedSpeed})`);
-
-      // Additional loudspeaker enforcement right before playback
-      if (useSpeaker) {
-        try {
-          // Double-check loudspeaker routing right before playing
-          // Keep recording disabled during playback to maintain loudspeaker routing
-          await Audio.setAudioModeAsync({
-            allowsRecordingIOS: false, // Keep recording disabled during TTS playback
-            playsInSilentModeIOS: true,
-            shouldDuckAndroid: true,
-            playThroughEarpieceAndroid: false, // Force loudspeaker on Android
-            staysActiveInBackground: false,
-          });
-          console.log('ElevenLabs: Enforced loudspeaker mode before playback');
-
-        } catch (forceError) {
-          console.log('ElevenLabs: Could not enforce loudspeaker mode before playback');
+      try {
+        const pitchQuality = (Audio as any).PitchCorrectionQuality?.High ?? undefined;
+        if (typeof sound.setRateAsync === 'function') {
+          await sound.setRateAsync(playbackRate, true, pitchQuality);
         }
+      } catch (rateError) {
+        console.warn('ElevenLabs: Failed to apply playback rate locally:', rateError);
       }
 
       return new Promise<void>((resolve, reject) => {
         sound.setOnPlaybackStatusUpdate(async (status) => {
           if (status.isLoaded && status.didJustFinish) {
-            sound.unloadAsync();
-            
-            // Re-enable recording after TTS playback completes (for loudspeaker mode)
-            if (useSpeaker) {
-              try {
-                await Audio.setAudioModeAsync({
-                  allowsRecordingIOS: true, // Re-enable recording after TTS
-                  playsInSilentModeIOS: true,
-                  shouldDuckAndroid: true,
-                  playThroughEarpieceAndroid: false, // Maintain loudspeaker for future playback
-                  staysActiveInBackground: false,
-                });
-                console.log('ElevenLabs: Re-enabled recording after TTS playback');
-              } catch (reEnableError) {
-                console.log('ElevenLabs: Could not re-enable recording after TTS');
-              }
-            }
-            
+            await sound.unloadAsync();
             onSpeechEnd?.();
-            console.log('ElevenLabs: Audio playback finished, triggered onSpeechEnd');
             resolve();
           }
         });
 
-        // Trigger animation right before starting playback for better sync
         onSpeechStart?.();
-        console.log('ElevenLabs: Triggered onSpeechStart right before playAsync');
 
         sound.playAsync().catch((error) => {
           console.error('ElevenLabs: Speech playback error:', error);
@@ -478,42 +432,15 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
   private async initializeAudio(useSpeaker: boolean = true): Promise<void> {
     try {
       await Audio.requestPermissionsAsync();
-      
-      console.log(`ElevenLabs: Initializing audio with useSpeaker: ${useSpeaker}`);
-      
-      if (useSpeaker) {
-        // iOS loudspeaker routing fix: The key is to temporarily disable recording
-        // during playback to force iOS to use the loudspeaker instead of earpiece
-        
-        // Step 1: Set playback-only mode to force loudspeaker routing
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false, // Critical: Disable recording for pure playback
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false, // Android loudspeaker
-          staysActiveInBackground: false,
-        });
-        console.log('ElevenLabs: Set playback-only loudspeaker mode');
-        
-        // Step 2: Small delay to let iOS process the audio routing change
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Step 3: Optionally re-enable recording after establishing loudspeaker route
-        // (This can be done after playback starts if needed for future recording)
-        
-      } else {
-        // Phone speaker/earpiece mode
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: true, // Use phone speaker/earpiece
-          staysActiveInBackground: false,
-        });
-        console.log('ElevenLabs: Set phone speaker mode');
-      }
-      
-      console.log(`ElevenLabs: Audio initialization completed for ${useSpeaker ? 'loudspeaker' : 'phone speaker'}`);
+      console.log(`ElevenLabs: initializeAudio useSpeaker=${useSpeaker}`);
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: useSpeaker ? false : true,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: useSpeaker ? false : true,
+        staysActiveInBackground: false,
+      });
     } catch (error) {
       console.error('ElevenLabs: Audio initialization failed:', error);
       throw new Error('Failed to initialize audio permissions');
@@ -627,54 +554,6 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
     };
 
     return modelMap[language] || 'eleven_monolingual_v1';
-  }
-
-  // Helper method to add emotional context to text
-  private applySpeedToText(text: string, speed: number): string {
-    if (speed >= 0.9 && speed <= 1.1) {
-      // Normal speed range, no modification needed
-      return text;
-    }
-    
-    if (speed < 0.9) {
-      // Slower speech: add pauses and emphasis
-      // Add commas for natural pauses and periods for longer pauses
-      let slowText = text;
-      
-      // Add pauses after punctuation for very slow speech
-      if (speed < 0.7) {
-        slowText = slowText.replace(/\./g, '... ');
-        slowText = slowText.replace(/,/g, ', ');
-        slowText = slowText.replace(/\?/g, '? ');
-        slowText = slowText.replace(/!/g, '! ');
-      } else {
-        // Moderate slow speech
-        slowText = slowText.replace(/\./g, '. ');
-        slowText = slowText.replace(/,/g, ', ');
-      }
-      
-      // Add spaces between words for very slow speech
-      if (speed < 0.6) {
-        slowText = slowText.replace(/\s+/g, '  ');
-      }
-      
-      return slowText;
-    } else {
-      // Faster speech: remove some pauses and make more fluid
-      let fastText = text;
-      
-      // Remove extra spaces and some punctuation pauses
-      fastText = fastText.replace(/\s+/g, ' ');
-      fastText = fastText.replace(/,\s+/g, ', ');
-      
-      return fastText;
-    }
-  }
-
-  private addEmotionalContext(text: string, emotion: AudioEmotion): string {
-    // ElevenLabs handles emotion through voice settings, not text markers
-    // Return the original text without any emotional markers
-    return text;
   }
 
   // Enhanced methods for voice selection and caching
@@ -809,11 +688,10 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
     text: string,
     voiceId: string,
     speed: number,
-    emotion: AudioEmotion,
+    emotion: string,
     stability: number,
     similarityBoost: number
   ): string {
-    // Create a hash-like key for caching
     const keyData = `${text}_${voiceId}_${speed}_${emotion}_${stability}_${similarityBoost}`;
     return keyData.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
   }
@@ -850,6 +728,16 @@ export class ElevenLabsServiceImpl implements ElevenLabsService {
     };
     
     return phrases[language]?.[cefrLevel] || phrases.english.A1;
+  }
+
+  private mapSpeedToPlaybackRate(speed: number): number {
+    if (speed < 1) {
+      return Math.max(0.5, speed - 0.2);
+    }
+    if (speed > 1) {
+      return Math.min(1.5, speed + 0.2);
+    }
+    return 1.0;
   }
 }
 
