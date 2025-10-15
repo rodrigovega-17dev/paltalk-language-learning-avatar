@@ -22,6 +22,7 @@ export interface ConversationFlowController {
   onSpeechStart?: () => void;
   onSpeechEnd?: () => void;
   onMessageAdded?: (message: Message) => void;
+  cancelRecording(): Promise<void>;
 }
 
 export interface ConversationState {
@@ -343,6 +344,21 @@ export class DefaultConversationFlowController implements ConversationFlowContro
 
   async stopContinuousRecording(): Promise<void> {
     await this.finishUserInput();
+  }
+
+  async cancelRecording(): Promise<void> {
+    if (!this.state.isRecording) {
+      this.state.isRecording = false;
+      return;
+    }
+
+    try {
+      await this.conversationService.cancelListening();
+    } catch (error) {
+      console.warn('ConversationFlowController: cancelRecording error', error);
+    } finally {
+      this.state.isRecording = false;
+    }
   }
 
   // Method to update speaker setting

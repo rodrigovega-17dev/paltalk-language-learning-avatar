@@ -290,6 +290,24 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
     }, 100);
   };
 
+  const handleAudioRecordingError = async () => {
+    try {
+      await conversationFlowController.cancelRecording();
+    } catch (cancelError) {
+      console.warn('ConversationScreen: Failed to cancel recording after audio error', cancelError);
+    }
+
+    Alert.alert(
+      'No se pudo grabar',
+      'Intenta presionar y mantener el botón por un momento.',
+      [{ text: 'Entendido' }]
+    );
+
+    setIsRecording(false);
+    setIsLoading(false);
+    avatarController.playIdleAnimation();
+  };
+
   // Handle record button press (start recording)
   const handleRecordStart = async () => {
     if (!isConversationActive || isPaused || isRecording) return;
@@ -380,6 +398,11 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
       ]).start();
 
       if (error && typeof error === 'object' && 'type' in error) {
+        if ((error as ConversationError).type === 'audio') {
+          await handleAudioRecordingError();
+          return;
+        }
+
         handleConversationError(error as ConversationError);
       }
     } finally {
@@ -437,11 +460,8 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
 
       if (error && typeof error === 'object' && 'type' in error) {
         if ((error as ConversationError).type === 'audio') {
-          Toast.show({
-            type: 'info',
-            text1: 'No se pudo grabar',
-            text2: 'Intenta presionar y mantener el botón por un momento.',
-          });
+          await handleAudioRecordingError();
+          return;
         } else {
           handleConversationError(error as ConversationError);
         }
@@ -577,8 +597,8 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
         {/* Suggestion Display */}
         {isConversationActive && currentSuggestion && (
           <View style={styles.suggestionContainer}>
-            <Text style={styles.suggestionLabel}>Puedes decir:</Text>
-            <Text style={styles.suggestionText}>{currentSuggestion}</Text>
+            <AndroidText style={styles.suggestionLabel}>Puedes decir:</AndroidText>
+            <AndroidText style={styles.suggestionText}>{currentSuggestion}</AndroidText>
           </View>
         )}
 
@@ -686,9 +706,9 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                     ]}
                   >
                     <View style={styles.floatingTextBubble}>
-                      <Text style={styles.floatingText}>
+                      <AndroidText style={styles.floatingText}>
                         Suelta para enviar
-                      </Text>
+                      </AndroidText>
                       <View style={styles.floatingTextArrow} />
                     </View>
                   </Animated.View>
@@ -715,17 +735,17 @@ export const ConversationScreen: React.FC<ConversationScreenProps> = ({
                     activeOpacity={0.9}
                   >
                     <View style={styles.recordButtonInner}>
-                      <Text style={styles.recordButtonIcon}>
+                      <AndroidText style={styles.recordButtonIcon}>
                         {isRecording ? '🔴' : '🎤'}
-                      </Text>
-                      <Text
+                      </AndroidText>
+                      <AndroidText
                         style={styles.recordButtonText}
                         numberOfLines={2}
                         adjustsFontSizeToFit={true}
                         minimumFontScale={0.7}
                       >
                         {isRecording ? '' : 'Mantén presionado para hablar'}
-                      </Text>
+                      </AndroidText>
                     </View>
 
                     {/* Pulse animation for recording */}

@@ -407,22 +407,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, onNavig
               <AndroidText style={styles.sectionTitle}>Racha 🔥</AndroidText>
               <View style={styles.streakCard}>
                 <View style={styles.streakRow}>
-                  <Text style={styles.streakLabel}>Racha actual:</Text>
-                  <Text style={styles.streakValue}>
+                  <AndroidText style={styles.streakLabel}>Racha actual:</AndroidText>
+                  <AndroidText style={styles.streakValue}>
                     🔥 {streakData.currentStreak} días
-                  </Text>
+                  </AndroidText>
                 </View>
                 <View style={styles.streakRow}>
-                  <Text style={styles.streakLabel}>Mejor racha:</Text>
-                  <Text style={styles.streakValue}>
+                  <AndroidText style={styles.streakLabel}>Mejor racha:</AndroidText>
+                  <AndroidText style={styles.streakValue}>
                     🏆 {streakData.longestStreak} días
-                  </Text>
+                  </AndroidText>
                 </View>
                 <View style={styles.streakRow}>
-                  <Text style={styles.streakLabel}>Congelaciones:</Text>
-                  <Text style={styles.streakValue}>
+                  <AndroidText style={styles.streakLabel}>Congelaciones:</AndroidText>
+                  <AndroidText style={styles.streakValue}>
                     ❄️ {2 - streakData.streakFreezeCount}/2 disponibles
-                  </Text>
+                  </AndroidText>
                 </View>
               </View>
             </View>

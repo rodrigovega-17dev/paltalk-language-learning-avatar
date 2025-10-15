@@ -8,6 +8,7 @@ import { authService } from './authService';
 export interface ConversationService {
   startListening(): Promise<void>;
   stopListening(targetLanguage?: string): Promise<string>;
+  cancelListening(): Promise<void>;
   sendMessageToChatGPT(message: string, context: ConversationContext): Promise<string>;
   speakText(text: string, language: string, ttsSettings: ElevenLabsTTSSettings, onSpeechStart?: () => void, onSpeechEnd?: () => void): Promise<void>;
   pauseConversation(): void;
@@ -147,6 +148,23 @@ export class ExpoConversationService implements ConversationService {
       };
       throw conversationError;
     }
+  }
+
+  async cancelListening(): Promise<void> {
+    if (!this.isRecording || !this.recording) {
+      this.isRecording = false;
+      this.recording = null;
+      return;
+    }
+
+    try {
+      await this.recording.stopAndUnloadAsync();
+    } catch (error) {
+      console.warn('ConversationService: cancelListening stop failed', error);
+    }
+
+    this.recording = null;
+    this.isRecording = false;
   }
 
   private async transcribeAudio(audioUri: string, targetLanguage?: string): Promise<string> {
